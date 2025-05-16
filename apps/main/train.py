@@ -326,6 +326,15 @@ def train(args: TrainArgs):
 
         gc.disable()
 
+        if args.checkpoint.dump.save_initial and train_state.step == 0:
+            _ = checkpoint.save(
+                model,
+                optimizer,
+                train_state,
+                args,
+                device_mesh=world_mesh,
+            )
+
         # train loop
         model.train()
         metric_logger = context_stack.enter_context(
