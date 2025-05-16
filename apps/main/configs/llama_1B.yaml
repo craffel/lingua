@@ -50,6 +50,7 @@ checkpoint:
   dump:
     every: 2500
     keep: 3
+    save_initial: true
   eval:
     every: 5000
     keep: -1
