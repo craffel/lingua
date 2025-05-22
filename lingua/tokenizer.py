@@ -4,7 +4,7 @@ import abc
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Sequence
 import logging
 import os
 
@@ -187,6 +187,180 @@ class TikTokenTokenizer(Tokenizer):
         return substrs, offsets
 
 
+def find_id(tokenizer, surfaces: Sequence[str]):
+    """Look through surfaces to see if any are in the tokenizer's vocab."""
+    token_id = None
+    for surface in surfaces:
+        token_id = tokenizer.token_to_id(surface)
+        if token_id is not None:
+            logger.info("Found id for special token: %s", surface)
+            break
+    else:
+        logger.warning("No id found for special token.")
+    return token_id
+
+
+class HFTokenizer(Tokenizer):
+
+    def __init__(self, model_path: str) -> None:
+        try:
+            import transformers
+            # Try to load as a transformers.Tokenizer as it includes more
+            # information about things like bos/eos
+            transformers_tokenizer = transformers.AutoTokenizer.from_pretrained(
+                model_path
+            )
+            logger.info("Loaded Transformers Tokenizer from %s", model_path)
+            # Extract the underlying tokenizers.Tokenizer to get access to things
+            # like the offests.
+            self.hf_tokenizer = transformers_tokenizer._tokenizer
+            logger.info(
+                "Extracted Tokenizers Tokenizer from Transformers Tokenizer"
+            )
+
+            # Find special tokens based on the transformers.Tokenizer
+            bos_token = transformers_tokenizer.bos_token
+            logger.info(
+                "Found bos_token: %s based on Transformers Tokenizer.", bos_token
+            )
+            self.bos_id = transformers_tokenizer.convert_tokens_to_ids(bos_token)
+
+            eos_token = transformers_tokenizer.eos_token
+            logger.info(
+                "Found eos_token: %s based on Transformers Tokenizer.", eos_token
+            )
+            self.eos_id = transformers_tokenizer.convert_tokens_to_ids(eos_token)
+
+            pad_token = transformers_tokenizer.pad_token
+            logger.info(
+                "Found pad_token: %s based on Transformers Tokenizer.", pad_token
+            )
+            if pad_token is not None:
+                # It is ok for this not be set for models that don't have a pad
+                # because it isn't set for some the other lingua implementations.
+                self.pad_id = transformers_tokenizer.convert_tokens_to_ids(pad_token)
+
+        except:
+            import tokenizers
+            # If we failed to load as a transformers.Tokenizer, load as a
+            # tokenizers.Tokenizer
+            self.hf_tokenizer = tokenizers.Tokenizer.from_file(model_path)
+            logger.info("Loaded Tokenizers Tokenizer.")
+
+            # We need to infer the special tokens. If you used a different
+            # special token, it needs to be added tothe DEFAULT_SPECIAL_TOKENS
+            # dict.
+            logger.info("Infering bos id.")
+            self.bos_id = find_id(self.hf_tokenizer, DEFAULT_SPECIAL_TOKENS["bos"])
+            logger.info("Infering eos id.")
+            self.eos_id = find_id(self.hf_tokenizer, DEFAULT_SPECIAL_TOKENS["eos"])
+            logger.info("Infering pad id.")
+            self.pad_id = find_id(self.hf_tokenizer, DEFAULT_SPECIAL_TOKENS["pad"])
+
+        self.n_words = self.hf_tokenizer.get_vocab_size()
+
+        logger.info(
+            "#words: %d - BOS ID: %d - EOS ID: %d",
+            self.n_words,
+            self.bos_id,
+            self.eos_id,
+        )
+
+    def encode(self, s: str, add_bos: bool, add_eos: bool):
+        """Convert a string to a list of tokens."""
+        # Never add bos/eos special tokens because we are using a
+        # tokenizers.Tokenizer which doesn't auto add them.
+        encoded = self.hf_tokenizer.encode(s, add_special_tokens=False).ids
+        # Add bos/eos as needed, easy because we are not processing batches.
+        if add_bos:
+            encoded = [self.bos_id] + encoded
+        if add_eos:
+            encoded = encoded + [self.eos_id]
+        return encoded
+
+    def decode(self, tokens: List[int]):
+        """Convert a list of tokens to a stirng."""
+        return self.hf_tokenizer.decode(tokens)
+
+    def get_token_offsets(
+        self, text: str, tokens: Optional[List[int]] = None
+    ) -> Tuple[List[str], List[int]]:
+        """Get the offsets (and surface) for each token in the original string."""
+        if tokens is not None:
+            logger.warning(
+                "`tokens` passed to `get_token_offsets`, but are ignored with the HFTokenizer."
+            )
+
+        # Don't add special tokens so we don't need to handle things like the
+        # offset of the bos token.
+        encoding = self.hf_tokenizer.encode(text, add_special_tokens=False)
+        # Slice the original text instead of using encoding.tokens to avoid the
+        # fact that tokenizers uses Ġ instead of space.
+        substrs = [text[s:e] for s, e in encoding.offsets]
+        return substrs, encoding.offsets
+
+
+class TokenMonsterTokenizer(Tokenizer):
+
+    def __init__(self, model_path: str):
+        import tokenmonster
+        self.tokenizer = tokenmonster.load(model_path)
+        self.n_words = self.tokenizer.vocab_size
+        self.bos_id = None
+        self.eos_id = None
+
+        logger.info(
+            "#words: %d - BOS ID: %d - EOS ID: %d",
+            self.n_words,
+            self.bos_id,
+            self.eos_id,
+        )
+
+    def encode(self, s: str, add_bos: bool, add_eos: bool):
+        return self.tokenizer.tokenize(s)
+
+    def decode(self, tokens: List[int]):
+        return self.tokenizer.decode(tokens)
+
+    def get_token_offsets(
+        self, text: str, tokens: Optional[List[int]] = None
+    ) -> Tuple[List[str], List[int]]:
+        return None, None
+
+
+class TekkenTokenizer(Tokenizer):
+    def __init__(self):
+        from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
+        tok = MistralTokenizer.v3(is_tekken=True)
+        self.tokenizer = tok.instruct_tokenizer.tokenizer
+
+        self.n_words = self.tokenizer.n_words
+        self.bos_id = self.tokenizer.bos_id
+        self.eos_id = self.tokenizer.eos_id
+
+        logger.info(
+            "#words: %d - BOS ID: %d - EOS ID: %d",
+            self.n_words,
+            self.bos_id,
+            self.eos_id,
+        )
+
+    def encode(self, s: str, add_bos: bool, add_eos: bool):
+        return self.tokenizer.encode(s, add_bos, add_eos)
+
+    def decode(self, tokens: List[int]):
+        if tokens[0] == self.bos_id:
+            tokens = tokens[1:]
+        if tokens[-1] == self.eos_id:
+            tokens = tokens[:-1]
+        return self.tokenizer.decode(tokens)
+
+    def get_token_offsets(
+        self, text: str, tokens: Optional[List[int]] = None
+    ) -> Tuple[List[str], List[int]]:
+        return None, None
+
+
 def build_tokenizer(name: str, path: Optional[str] = None) -> Tokenizer:
     if name == "bytes":
         return ByteTokenizer()
@@ -196,5 +370,11 @@ def build_tokenizer(name: str, path: Optional[str] = None) -> Tokenizer:
         return SentencePieceTokenizer(path)
     elif name == "tiktoken":
         return TikTokenTokenizer(path)
+    elif name == "huggingface":
+        return HFTokenizer(path)
+    elif name == "tokenmonster":
+        return TokenMonsterTokenizer(path)
+    elif name == "tekken":
+        return TekkenTokenizer()
     else:
         raise NotImplementedError(f"{name} tokenizer type is not implemented")
