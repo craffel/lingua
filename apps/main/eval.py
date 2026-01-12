@@ -160,7 +160,28 @@ class EvalHarnessLM(LM):
         self.generator.max_gen_len = max_gen_len
 
         return results
-    
+
+    def chat_template(self, chat_template=False):
+        if bool(chat_template):
+            return "Instruction: {instruction}\n\nAnswer: {answer}"
+        return None
+
+    def apply_chat_template(self, chat_history, add_generation_prompt = True):
+        final_message = ""
+        for m_idx, m in enumerate(chat_history):
+            if "role" not in m or "content" not in m:
+                raise RuntimeError("Unexpected chat_history format.")
+            if m_idx > 0:
+                final_message += "\n\n"
+            if m["role"] == "user":
+                final_message += f"Instruction: "+m["content"]
+            elif m["role"] == "assistant":
+                final_message += f"Answer: "+m["content"]
+            else:
+                raise RuntimeError("Unexpected chat_history format.")
+        if add_generation_prompt:
+            final_message += "\n\nAnswer: "
+        return final_message
 
 def eval_on_val(generator, val_args: ValidationArgs, train_cfg):
     srcs = {}
