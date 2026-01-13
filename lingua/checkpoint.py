@@ -51,6 +51,7 @@ RE_DIGITS = re.compile(r"\d+")
 class SaveEvery:
     every: int = 1000
     keep: int = 0
+    save_initial: bool = False
 
 
 @dataclass
