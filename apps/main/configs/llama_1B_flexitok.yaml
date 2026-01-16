@@ -90,7 +90,6 @@ eval:
       - include_base_44_arabic
       # no czech or swedish
       - include_base_44_chinese
-      - include_base_44_danish
       - include_base_44_german
       - include_base_44_greek
       - include_base_44_persian
