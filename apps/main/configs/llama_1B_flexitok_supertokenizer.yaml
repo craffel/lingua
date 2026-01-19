@@ -1,7 +1,7 @@
 dump_dir: /fsx/craffel/lingua_logs/flexitok_llama_supertokenizer/
 name: "flexitok_llama_supertokenizer"
 steps: 100_000
-grad_acc_steps: 8
+grad_acc_steps: 16
 
 seed: 777
 optim:
@@ -94,7 +94,7 @@ data:
     swe_Latn: 0.0360599609030777
     tur_Latn: 0.0392426324736215
     vie_Latn: 0.0329142517114456
-  batch_size: 4
+  batch_size: 2
   prefetch_size: 1024
   seq_len: 4096
   n_views: 2
