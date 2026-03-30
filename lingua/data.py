@@ -18,6 +18,9 @@ import logging
 
 logger = logging.getLogger()
 
+dump_docs=os.environ.get("DUMP_DOCS","False")=="True"
+print_docs=os.environ.get("PRINT_DOCS","False")=="True"
+dump_dir=os.environ.get("DUMP_DIR","/scratch/gsa/data_recreation-dump/")
 """
 This file contains all code necessary for text data loading from preshuffled jsonl chunks.
 For example if given the following files with a world size of 8 
@@ -285,6 +288,16 @@ def choose_source(
             source_to_state=source_to_state,
             rng_state=rng.bit_generator.state,
         )
+        if print_docs:
+            global_rank = int(os.environ.get("RANK", 0))
+            print(f"Rank {global_rank} - Chosen Source: {source_choice} | Source State: {state}")
+        if dump_docs:
+            global_rank = int(os.environ.get("RANK", 0))
+            dump_path = Path(dump_dir)/f"rank_{global_rank}.jsonl"
+            dump_path.parent.mkdir(parents=True,exist_ok=True)
+            with open(dump_path,"a") as f_dump:
+                json.dump({"text":seq["text"], "source": source_choice, "position": state.get("position", None)},f_dump)
+                f_dump.write("\n")
         yield seq, multi_choice_state
 
 
