@@ -1,0 +1,9 @@
+data:
+  root_dir: /localscratch/expires-2026-Oct-02/gsaltintas/data
+  sources:
+    fw_edu: 1.
+    fineweb_edu_10bt_shuffled8: 0.
+
+  tokenizer:
+    name: tiktoken
+    path: /u/gsaltintas/data/tokenizer/llama-3.2-1B/original/tokenizer.model

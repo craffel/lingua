@@ -46,9 +46,19 @@ default_no_recompute_ops = {
     torch.ops.aten._scaled_dot_product_efficient_attention.default,
     torch.ops.aten._scaled_dot_product_flash_attention.default,
     torch.ops.c10d_functional.reduce_scatter_tensor.default,
-    torch.ops.xformers_flash.flash_fwd.default,
-    torch.ops.xformers.efficient_attention_forward_cutlass.default,
 }
+
+# xformers registers different backend ops depending on platform
+# (CUDA: xformers_flash/cutlass, ROCm: composable-kernel "_ck" ops).
+for _get_xformers_op in (
+    lambda: torch.ops.xformers_flash.flash_fwd.default,
+    lambda: torch.ops.xformers.efficient_attention_forward_cutlass.default,
+    lambda: torch.ops.xformers.efficient_attention_forward_ck.default,
+):
+    try:
+        default_no_recompute_ops.add(_get_xformers_op())
+    except AttributeError:
+        pass
 
 
 @dataclass

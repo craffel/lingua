@@ -1,0 +1,52 @@
+steps: 100
+
+seed: 777
+optim:
+  lr: 1.0e-3
+  weight_decay: 0.2
+  warmup: 2000
+  lr_min_ratio: 0.000001
+  clip: 1.0
+
+distributed:
+  fsdp_type: full_shard
+  compile: true
+  model_dtype: bf16
+  matmul_allow_tf32: false
+  selective_activation_checkpointing: false
+  tp_size: 1
+
+model:
+  dim: 2048
+  n_layers: 25
+  n_heads: 16
+
+data:
+  root_dir: /root/lingua_dump/data
+  sources:
+    fineweb_edu_10bt_shuffled8: 1.0
+  prefetch_size: 4096
+  seq_len: 4096
+  n_views: 2
+  load_async: true
+  tokenizer:
+    name: tiktoken
+    path: /root/lingua_dump/tokenizer/llama/original/tokenizer.model
+
+profiling:
+  run: true
+  mem_warmup: 0
+  mem_steps: 4
+  profile_warmup: 100
+  profile_steps: 4
+
+checkpoint:
+  dump:
+    every: 10000
+    keep: -1
+  eval:
+    every: 2000
+    keep: 3
+
+logging:
+  freq: 1
