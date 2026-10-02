@@ -1,0 +1,29 @@
+# Training llama model on the parity-aware bpe tokenizer
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/ablations/2.11_parity_aware_bpe_devset.yaml"] 
+#  python -m lingua.stool_ccdb ngpu=1 ncpu=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/ablations/2.11_parity_aware_bpe_devset.yaml"] 
+#  python -m lingua.stool_dcs ngpu=1 nodes=1 ncpu=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/ablations/2.11_parity_aware_bpe_devset.yaml"] 
+
+dump_dir: /fsx/craffel/lingua_logs/parity_aware_bpe_devset
+name: parity_aware_bpe_devset
+
+# model:
+#   dim: 64
+
+# logging:
+#   wandb: 
+
+data:
+  tokenizer:
+    name: huggingface
+    path: flexitok/parity-aware-bpe-devset
+
+checkpoint:
+  init_ckpt_path: 
+  path: /fsx/craffel/lingua_logs/checkpoints/parity_aware_bpe_devset/
+  dump:
+    every: 1000
+    keep: 2
+  eval:
+    every: 2500000
+    keep: -1

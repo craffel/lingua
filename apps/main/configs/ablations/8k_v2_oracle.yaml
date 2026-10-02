@@ -1,0 +1,113 @@
+# # Training superset tokenizer with individual tokenizers trained on Fineweb-2-hq
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+# python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/ablations/8k_v2_oracle.yaml"]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/ablations/8k_v2_oracle.yaml"]
+
+dump_dir: /fsx/craffel/lingua_logs/8k_v2_oracle 
+name: flexitok_8k_v2_oracle
+
+
+model:
+  vocab_size: 122447
+
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/8k_v2_oracle/
+
+data:
+  tokenizer:
+    name: supertokenizer
+    seed: 42
+    superset_code_name: 8k_v2
+    n_words: 122447
+    
+    tokenizers:
+      - name: huggingface
+        path: flexitok/bpe_ltr_arb_Arab_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_ces_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_cmn_Hani_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_dan_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_deu_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_ell_Grek_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_fas_Arab_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_fra_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_fw_edu_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_hun_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_ind_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_ita_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_jpn_Jpan_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_nld_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_pol_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_por_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_rus_Cyrl_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_spa_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_swe_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_tur_Latn_8000_v2
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ltr_vie_Latn_8000_v2
+        load_supermapping: True
+
+  routing:
+    # suitable_tokenizer_key: suitable_tokenizer
+    suitable_tokenizer_probability: 1.0
+    source_to_tokenizer:
+      arb_Arab: flexitok/bpe_ltr_arb_Arab_8000_v2
+      ces_Latn: flexitok/bpe_ltr_ces_Latn_8000_v2
+      cmn_Hani: flexitok/bpe_ltr_cmn_Hani_8000_v2
+      dan_Latn: flexitok/bpe_ltr_dan_Latn_8000_v2
+      deu_Latn: flexitok/bpe_ltr_deu_Latn_8000_v2
+      ell_Grek: flexitok/bpe_ltr_ell_Grek_8000_v2
+      fas_Arab: flexitok/bpe_ltr_fas_Arab_8000_v2
+      fra_Latn: flexitok/bpe_ltr_fra_Latn_8000_v2
+      fw_edu: flexitok/bpe_ltr_fw_edu_8000_v2
+      hun_Latn: flexitok/bpe_ltr_hun_Latn_8000_v2
+      ind_Latn: flexitok/bpe_ltr_ind_Latn_8000_v2
+      ita_Latn: flexitok/bpe_ltr_ita_Latn_8000_v2
+      jpn_Jpan: flexitok/bpe_ltr_jpn_Jpan_8000_v2
+      nld_Latn: flexitok/bpe_ltr_nld_Latn_8000_v2
+      pol_Latn: flexitok/bpe_ltr_pol_Latn_8000_v2
+      por_Latn: flexitok/bpe_ltr_por_Latn_8000_v2
+      rus_Cyrl: flexitok/bpe_ltr_rus_Cyrl_8000_v2
+      spa_Latn: flexitok/bpe_ltr_spa_Latn_8000_v2
+      swe_Latn: flexitok/bpe_ltr_swe_Latn_8000_v2
+      tur_Latn: flexitok/bpe_ltr_tur_Latn_8000_v2
+      vie_Latn: flexitok/bpe_ltr_vie_Latn_8000_v2
+

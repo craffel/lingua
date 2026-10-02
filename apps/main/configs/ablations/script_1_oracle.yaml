@@ -1,0 +1,77 @@
+# Config for super vocab built from tokenizers: flexitok/bpe_script_Arab_16000, flexitok/bpe_script_CmJp_16000, flexitok/bpe_ltr_ell_Grek_8000_v2, flexitok/bpe_ltr_fw_edu_32000_v2, flexitok/bpe_ltr_hun_Latn_8000_v2, flexitok/bpe_ltr_rus_Cyrl_16000_v2, flexitok/bpe_ltr_tur_Latn_8000_v2, flexitok/bpe_script_Germ_32000, flexitok/bpe_script_Roma_32000, flexitok/bpe_script_SEAS_16000, flexitok/bpe_script_Slav_16000
+## Training superset tokenizer with individual tokenizers trained on Fineweb-2-hq
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+##TODO: add router details, make sure name is correct
+# python -m lingua.stool script=apps.main.train config=[/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/script_1_oracle.yaml]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=[apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/script_1_oracle.yaml]
+
+model:
+  vocab_size: 163711
+name: script_1
+dump_dir: /fsx/craffel/lingua_logs/script_1
+data:
+  tokenizer:
+    name: supertokenizer
+    seed: 42
+    superset_code_name: script_1
+    n_words: 163711
+    tokenizers:
+    - name: huggingface
+      path: flexitok/bpe_script_Arab_16000
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_script_CmJp_16000
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_ltr_ell_Grek_8000_v2
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_ltr_fw_edu_32000_v2
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_ltr_hun_Latn_8000_v2
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_ltr_rus_Cyrl_16000_v2
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_ltr_tur_Latn_8000_v2
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_script_Germ_32000
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_script_Roma_32000
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_script_SEAS_16000
+      load_supermapping: true
+    - name: huggingface
+      path: flexitok/bpe_script_Slav_16000
+      load_supermapping: true
+  routing:
+    suitable_tokenizer_probability: 1.0
+    source_to_tokenizer:
+      arb_Arab: flexitok/bpe_script_Arab_16000
+      fas_Arab: flexitok/bpe_script_Arab_16000
+      cmn_Hani: flexitok/bpe_script_CmJp_16000
+      jpn_Jpan: flexitok/bpe_script_CmJp_16000
+      ell_Grek: flexitok/bpe_ltr_ell_Grek_8000_v2
+      fw_edu: flexitok/bpe_ltr_fw_edu_32000_v2
+      hun_Latn: flexitok/bpe_ltr_hun_Latn_8000_v2
+      rus_Cyrl: flexitok/bpe_ltr_rus_Cyrl_16000_v2
+      tur_Latn: flexitok/bpe_ltr_tur_Latn_8000_v2
+      dan_Latn: flexitok/bpe_script_Germ_32000
+      deu_Latn: flexitok/bpe_script_Germ_32000
+      nld_Latn: flexitok/bpe_script_Germ_32000
+      swe_Latn: flexitok/bpe_script_Germ_32000
+      fra_Latn: flexitok/bpe_script_Roma_32000
+      ita_Latn: flexitok/bpe_script_Roma_32000
+      por_Latn: flexitok/bpe_script_Roma_32000
+      spa_Latn: flexitok/bpe_script_Roma_32000
+      ind_Latn: flexitok/bpe_script_SEAS_16000
+      vie_Latn: flexitok/bpe_script_SEAS_16000
+      ces_Latn: flexitok/bpe_script_Slav_16000
+      pol_Latn: flexitok/bpe_script_Slav_16000
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/script_1

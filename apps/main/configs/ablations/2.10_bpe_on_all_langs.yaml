@@ -1,0 +1,21 @@
+# Training llama model for the 43% of the original model to match the superset tokenizer 
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","/fsx/craffel/lingua/apps/main/configs/flexitok/llama_43k.yaml"] 
+#  python -m lingua.stool_ccdb ngpu=1 ncpu=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/flexitok/llama_43k.yaml"] 
+dump_dir: /fsx/craffel/lingua_logs/bpe_on_all_boundless
+name: bpe_on_all_boundless
+
+
+data:
+  tokenizer:
+    name: huggingface
+    path: flexitok/bpe_boundless_coverage_AllL_128000
+
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/bpe_on_all_boundless/
+  dump:
+    every: 10000
+    keep: -1
+  eval:
+    every: 10000
+    keep: -1

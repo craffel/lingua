@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/meta-llama-Llama-3.2-1B/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: meta-llama/Llama-3.2-1B
+dump_dir: /fsx/craffel/toksuite/lingua_logs/meta-llama-Llama-3.2-1B/
+name: toksuite_meta-llama-Llama-3.2-1B

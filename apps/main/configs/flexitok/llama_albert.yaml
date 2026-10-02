@@ -1,0 +1,8 @@
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/flexitok/llama_albert.yaml"]
+dump_dir: /fsx/craffel/lingua_logs/flexitok_llama_albert
+name: flexitok_llama_albert
+
+model:
+  use_factorized_embeddings: True
+  factorized_embedding_dim: 512

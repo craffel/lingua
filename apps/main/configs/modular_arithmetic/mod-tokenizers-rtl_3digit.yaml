@@ -1,0 +1,13 @@
+name: mod_arith_mod-tokenizers-rtl_3digit
+dump_dir: /fsx/craffel/lingua_logs/modular_arithmetic/mod-tokenizers-rtl_3digit
+
+data:
+  tokenizer:
+    path: huggingface
+    name: flexitok/mod-tokenizers-rtl_3digit
+
+logging:
+  wandb:
+    group: modular-arithmetic-ablations-corrected
+    name: mod-tokenizers-rtl_3digit
+

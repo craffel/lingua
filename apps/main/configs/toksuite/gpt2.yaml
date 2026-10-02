@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/gpt2/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: gpt2
+dump_dir: /fsx/craffel/toksuite/lingua_logs/gpt2/
+name: toksuite_gpt2

@@ -1,11 +1,11 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from dataclasses import dataclass
 import json
 import os
 import shutil
 import subprocess
-from typing import Dict, Any, MutableSequence
+from dataclasses import dataclass
+from typing import Any, Dict, MutableSequence
 
 from omegaconf import OmegaConf
 
@@ -26,13 +26,14 @@ class StoolArgs:
     ngpu: int = 8  # The number of GPUs required per node.
     ncpu: int = 16  # The number of CPUs allocated per task.
     mem: str = ""  # The amount of memory to allocate.
-    anaconda: str = "default"  # The path to the anaconda environment.
+    anaconda: str | None= None  # The path to the anaconda environment.
+    venv: str = "/fsx/craffel/lingua/.venv" # The path to the virtual environment (alternative to anaconda).
     constraint: str = ""  # The constraint on the nodes.
     exclude: str = ""  # The nodes to exclude.
     time: int = 8000  # The time limit of the job (in minutes).
     account: str = ""
     qos: str = ""
-    partition: str = "hopper-prod"
+    partition: str = "hopper-atl"
     stdout: bool = False
     priority: str = "normal"
     data_dir: str = "/fsx/craffel/lingua/data/flexitok/"
@@ -65,9 +66,7 @@ SBATCH_COMMAND = """#!/bin/bash
 
 #SBATCH --open-mode=append
 
-# Mimic the effect of "conda init", which doesn't work for scripts
-eval "$({conda_exe} shell.bash hook)"
-source activate {conda_env_path}
+{activate_command}
 
 {go_to_code_dir}
 
@@ -140,6 +139,13 @@ def validate_args(args) -> None:
     if getattr(args, "exclude", ""):
         args.exclude = f"#SBATCH --exclude={args.exclude}"
 
+    if hasattr(args, "venv") and args.venv:
+        # if not args.venv.endswith("/bin/activate"):
+        #     args.venv = f"{args.venv}/bin/activate"
+        # assert os.path.isfile(args.venv), f"Virtual environment not found at {args.venv}"
+        assert os.path.exists(args.venv), f"Virtual environment not found at {args.venv}"
+        args.anaconda = ""  # Ensure anaconda is not used if venv is specified
+
     if hasattr(args, "anaconda") and args.anaconda:
         if args.anaconda == "default":
             args.anaconda = (
@@ -201,13 +207,26 @@ def launch_job(args: StoolArgs):
     with open(f"{dump_dir}/base_config.yaml", "w") as cfg:
         cfg.write(OmegaConf.to_yaml(args.config))
 
-    conda_exe = os.environ.get("CONDA_EXE", "conda")
-    conda_env_path = os.path.dirname(os.path.dirname(args.anaconda))
     log_output = (
         "-o $DUMP_DIR/logs/%j_%t.out -e $DUMP_DIR/logs/%j_%t.err"
         if not args.stdout
         else ""
     )
+
+    if args.anaconda:
+        conda_exe = os.environ.get("CONDA_EXE", "conda")
+        conda_env_path = os.path.dirname(os.path.dirname(args.anaconda))
+        activate_command = f"eval \"$({conda_exe} shell.bash hook)\" && source activate {conda_env_path}"
+    elif args.venv:
+        conda_exe = "source"
+        conda_env_path = args.venv
+        activate_command = f"source {args.venv}"
+        activate_command = f"source \"$(venv-load {args.venv})\""
+    else:
+        conda_exe = ""
+        conda_env_path = ""
+        activate_command = ""
+
     sbatch = SBATCH_COMMAND.format(
         name=job_name,
         script=args.script,
@@ -230,6 +249,7 @@ def launch_job(args: StoolArgs):
         go_to_code_dir=f"cd {dump_dir}/code/" if args.copy_code else "",
         priority=args.priority,
         copy_data_command=copy_data_command,
+        activate_command=activate_command
     )
 
     print("Writing sbatch command ...")

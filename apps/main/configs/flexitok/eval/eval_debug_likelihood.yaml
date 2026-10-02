@@ -1,0 +1,27 @@
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 mem=64G time=800 nodes=1 gpu_type=l40s launcher=bash script=apps.main.eval config=["apps/main/configs/flexitok/eval/eval_debug_likelihood.yaml"]
+
+name: "flexitok_llama"
+dump_dir: /fsx/craffel/lingua_logs/flexitok_llama/eval/
+ckpt_dir: /fsx/craffel/lingua_logs/flexitok_llama/checkpoints/0000100000/
+
+
+harness:
+  log_samples: false
+  tasks:
+    # --- General Reasoning ---
+    - arc_easy
+    # - hellaswag
+    - toksuite_english_canonical
+
+generator:
+  max_tokens: 16384
+  dtype: bf16
+  add_bos: True
+
+wandb:
+  project: FlexiTokDebug
+  name: Llama-Lingua
+
+tokenizer:
+  name: huggingface
+  path: meta-llama/Llama-3.2-1B

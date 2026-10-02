@@ -1,0 +1,139 @@
+# python -m lingua.stool script=apps.main.eval config=["/fsx/craffel/lingua/apps/main/configs/flexitok/eval/eval_superset_albert_w_xglm.yaml"]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=sbatch script=apps.main.eval config=["apps/main/configs/flexitok/eval/eval_superset_albert_w_xglm.yaml"]
+# 
+name: "flexitok_superset_albert_w_xglm"
+dump_dir: /scratch/gsa/train/flexitok_superset_albert_w_xglm/checkpoints/
+ckpt_dir: /scratch/gsa/train/flexitok_superset_albert_w_xglm/checkpoints/0000100000/
+
+
+harness:
+  log_samples: false
+  tasks:
+    # --- General Reasoning ---
+    - arc_easy
+    - arc_challenge
+    - hellaswag
+    - piqa
+
+    # --- MMLU / Base 44 ---
+    - include_base_44_arabic
+    # no czech, swedish, danish
+    - include_base_44_chinese
+    - include_base_44_german
+    - include_base_44_greek
+    - include_base_44_persian
+    - include_base_44_french
+    - include_base_44_hungarian
+    - include_base_44_indonesian
+    - include_base_44_italian
+    - include_base_44_japanese
+    - include_base_44_dutch
+    - include_base_44_polish
+    - include_base_44_portuguese
+    - include_base_44_russian
+    - include_base_44_spanish
+    - include_base_44_turkish
+    - include_base_44_vietnamese
+
+    # --- Belebele ---
+    - belebele_arb_Arab
+    - belebele_ces_Latn
+    - belebele_zho_Hans
+    - belebele_dan_Latn
+    - belebele_deu_Latn
+    - belebele_ell_Grek
+    - belebele_pes_Arab
+    - belebele_fra_Latn
+    - belebele_hun_Latn
+    - belebele_ind_Latn
+    - belebele_ita_Latn
+    - belebele_jpn_Jpan
+    - belebele_nld_Latn
+    - belebele_pol_Latn
+    - belebele_por_Latn
+    - belebele_rus_Cyrl
+    - belebele_spa_Latn
+    - belebele_swe_Latn
+    - belebele_tur_Latn
+    - belebele_vie_Latn
+    - belebele_eng_Latn  
+
+    # --- XNLI ---
+    - xnli_ar
+    - xnli_zh
+    - xnli_de
+    - xnli_el
+    - xnli_en
+    - xnli_es
+    - xnli_fr
+    - xnli_ru
+    - xnli_tr
+    - xnli_vi
+    - toksuite
+
+generator:
+  max_tokens: 16384
+  dtype: bf16
+  add_bos: True
+
+wandb:
+  project: FlexiTok
+  # name: Superset_Albert
+  name: Superset_Albert-Fixed (w/ XGLM) #CohereLabs-aya-expanse-8b
+
+tokenizer:
+  name: supertokenizer
+  seed: 42
+  tokenizers:
+    - name: huggingface
+      path: flexitok/reindexed-CohereLabs-aya-expanse-8b
+      load_supermapping: False
+    - name: huggingface
+      path: flexitok/reindexed-bigscience-bloom
+      # path: bigscience/bloom
+      load_supermapping: False
+    - name: huggingface
+      # path: common-pile/comma-v0.1
+      path: flexitok/reindexed-common-pile-comma-v0.1
+      load_supermapping: False
+    - name: huggingface
+      # path: google/gemma-2-2b
+      path: flexitok/reindexed-google-gemma-2-2b
+      load_supermapping: False
+    - name: huggingface
+      # path: gpt2
+      path: flexitok/reindexed-gpt2
+      load_supermapping: False
+    - name: huggingface
+      # path: meta-llama/Llama-3.2-1B
+      path: flexitok/reindexed-meta-llama-Llama-3.2-1B
+      load_supermapping: False
+    - name: huggingface
+      # path: google-bert/bert-base-multilingual-cased
+      path: flexitok/reindexed-google-bert-bert-base-multilingual-cased
+      load_supermapping: False
+    - name: huggingface
+      # path: microsoft/Phi-3-mini-4k-instruct
+      path: flexitok/reindexed-microsoft-Phi-3-mini-4k-instruct
+      load_supermapping: False
+    - name: huggingface
+      # path: Qwen/Qwen3-8B
+      path: flexitok/reindexed-Qwen-Qwen3-8B
+      load_supermapping: False
+    - name: huggingface
+      path: facebook/xglm-564M
+      # path: flexitok/reindexed-facebook-xglm-564M
+      load_supermapping: True
+    - name: huggingface
+      path: google/byt5-small
+      load_supermapping: True
+    - name: tiktoken
+      path: gpt-4o
+      load_supermapping: True
+    - name: tekken
+      path: tekken
+      load_supermapping: True
+    - name: tokenmonster
+      path: englishcode-32000-consistent-v1
+      load_supermapping: True
+

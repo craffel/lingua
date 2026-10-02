@@ -204,7 +204,8 @@ class CheckpointManager:
         model,
         optimizer,
     ):
-        model_sd, optim_sd = get_state_dict(model, optimizer)
+        options = StateDictOptions(cpu_offload=True, full_state_dict=False)
+        model_sd, optim_sd = get_state_dict(model, optimizer, options=options)
         return {"model": model_sd, "optim": optim_sd}
 
     def save(
@@ -291,7 +292,7 @@ class CheckpointManager:
         dcp.load(state_dict, checkpoint_id=path)
         logger.info("State dict loaded.")
 
-        logger.info("Reloading model and optim")
+        logger.info(f"Reloading model and optim from {path}")
 
         set_state_dict(
             model,

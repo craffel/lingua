@@ -1,0 +1,8 @@
+
+checkpoint:
+  dump:
+    every: 5000
+    keep: 1
+  eval:
+    every: 200000
+    keep: 1

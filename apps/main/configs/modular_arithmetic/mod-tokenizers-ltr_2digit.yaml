@@ -1,0 +1,13 @@
+name: mod_arith_mod-tokenizers-ltr_2digit
+dump_dir: /fsx/craffel/lingua_logs/modular_arithmetic/mod-tokenizers-ltr_2digit
+
+data:
+  tokenizer:
+    path: huggingface
+    name: flexitok/mod-tokenizers-ltr_2digit
+
+logging:
+  wandb:
+    group: modular-arithmetic-ablations-corrected
+    name: mod-tokenizers-ltr_2digit
+

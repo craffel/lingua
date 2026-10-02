@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/common-pile-comma-v0.1-1t/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: common-pile/comma-v0.1-1t
+dump_dir: /fsx/craffel/toksuite/lingua_logs/common-pile-comma-v0.1-1t/
+name: toksuite_common-pile-comma-v0.1-1t

@@ -1,0 +1,161 @@
+# python -m lingua.stool_ccdb script=apps.main.eval config=["apps/main/configs/ablations/eval/eval_8k_v2_oracle_w_routing.yaml"]
+
+
+name: "eval_8k_v2_oracle"
+dump_dir: /fsx/craffel/lingua_logs/8k_v2_oracle/eval/
+ckpt_dir: /fsx/craffel/lingua_logs/8k_v2_oracle/checkpoints/0000100000/
+
+
+harness:
+  log_samples: true
+  tasks:
+    # --- General Reasoning ---
+    - arc_easy
+    - arc_challenge
+    - hellaswag
+    - piqa
+
+    # --- MMLU / Base 44 ---
+    - include_base_44_arabic
+    # no czech, swedish, danish
+    - include_base_44_chinese
+    - include_base_44_german
+    - include_base_44_greek
+    - include_base_44_persian
+    - include_base_44_french
+    - include_base_44_hungarian
+    - include_base_44_indonesian
+    - include_base_44_italian
+    - include_base_44_japanese
+    - include_base_44_dutch
+    - include_base_44_polish
+    - include_base_44_portuguese
+    - include_base_44_russian
+    - include_base_44_spanish
+    - include_base_44_turkish
+    - include_base_44_vietnamese
+
+    # --- Belebele ---
+    - belebele_arb_Arab
+    - belebele_ces_Latn
+    - belebele_zho_Hans
+    - belebele_dan_Latn
+    - belebele_deu_Latn
+    - belebele_ell_Grek
+    - belebele_pes_Arab
+    - belebele_fra_Latn
+    - belebele_hun_Latn
+    - belebele_ind_Latn
+    - belebele_ita_Latn
+    - belebele_jpn_Jpan
+    - belebele_nld_Latn
+    - belebele_pol_Latn
+    - belebele_por_Latn
+    - belebele_rus_Cyrl
+    - belebele_spa_Latn
+    - belebele_swe_Latn
+    - belebele_tur_Latn
+    - belebele_vie_Latn
+    - belebele_eng_Latn  
+
+    # --- XNLI ---
+    - xnli_ar
+    - xnli_zh
+    - xnli_de
+    - xnli_el
+    - xnli_en
+    - xnli_es
+    - xnli_fr
+    - xnli_ru
+    - xnli_tr
+    - xnli_vi
+
+    # --- TokSuite ---
+    - toksuite_turkish
+    - toksuite_english
+    - toksuite_farsi
+    - toksuite_italian
+    - toksuite_chinese
+    - toksuite_math
+    - toksuite_stem
+
+
+routing:
+  suitable_tokenizer_probability: 1.0
+  task_to_tokenizer:
+    arc_easy: flexitok/bpe_ltr_fw_edu_8000_v2
+    arc_challenge: flexitok/bpe_ltr_fw_edu_8000_v2
+    hellaswag: flexitok/bpe_ltr_fw_edu_8000_v2
+    piqa: flexitok/bpe_ltr_fw_edu_8000_v2
+
+    # --- MMLU / Base 44 ---
+    regex:include_base_44_arabic*: flexitok/bpe_ltr_arb_Arab_8000_v2
+    # no czech, swedish, danish
+    regex:include_base_44_chinese*: flexitok/bpe_ltr_cmn_Hani_8000_v2
+    regex:include_base_44_german*: flexitok/bpe_ltr_deu_Latn_8000_v2
+    regex:include_base_44_greek*: flexitok/bpe_ltr_ell_Grek_8000_v2
+    regex:include_base_44_persian*: flexitok/bpe_ltr_fas_Arab_8000_v2
+    regex:include_base_44_french*: flexitok/bpe_ltr_fra_Latn_8000_v2
+    regex:include_base_44_hungarian*: flexitok/bpe_ltr_hun_Latn_8000_v2
+    regex:include_base_44_indonesian*: flexitok/bpe_ltr_ind_Latn_8000_v2
+    regex:include_base_44_italian*: flexitok/bpe_ltr_ita_Latn_8000_v2
+    regex:include_base_44_japanese*: flexitok/bpe_ltr_jpn_Jpan_8000_v2
+    regex:include_base_44_dutch*: flexitok/bpe_ltr_nld_Latn_8000_v2
+    regex:include_base_44_polish*: flexitok/bpe_ltr_pol_Latn_8000_v2
+    regex:include_base_44_portuguese*: flexitok/bpe_ltr_por_Latn_8000_v2
+    regex:include_base_44_russian*: flexitok/bpe_ltr_rus_Cyrl_8000_v2
+    regex:include_base_44_spanish*: flexitok/bpe_ltr_spa_Latn_8000_v2
+    regex:include_base_44_turkish*: flexitok/bpe_ltr_tur_Latn_8000_v2
+    regex:include_base_44_vietnamese*: flexitok/bpe_ltr_vie_Latn_8000_v2
+
+    # --- Belebele ---
+    belebele_arb_Arab: flexitok/bpe_ltr_arb_Arab_8000_v2
+    belebele_ces_Latn: flexitok/bpe_ltr_ces_Latn_8000_v2
+    belebele_zho_Hans: flexitok/bpe_ltr_cmn_Hani_8000_v2
+    belebele_dan_Latn: flexitok/bpe_ltr_dan_Latn_8000_v2
+    belebele_deu_Latn: flexitok/bpe_ltr_deu_Latn_8000_v2
+    belebele_ell_Grek: flexitok/bpe_ltr_ell_Grek_8000_v2
+    belebele_pes_Arab: flexitok/bpe_ltr_fas_Arab_8000_v2
+    belebele_fra_Latn: flexitok/bpe_ltr_fra_Latn_8000_v2
+    belebele_hun_Latn: flexitok/bpe_ltr_hun_Latn_8000_v2
+    belebele_ind_Latn: flexitok/bpe_ltr_ind_Latn_8000_v2
+    belebele_ita_Latn: flexitok/bpe_ltr_ita_Latn_8000_v2
+    belebele_jpn_Jpan: flexitok/bpe_ltr_jpn_Jpan_8000_v2
+    belebele_nld_Latn: flexitok/bpe_ltr_nld_Latn_8000_v2
+    belebele_pol_Latn: flexitok/bpe_ltr_pol_Latn_8000_v2
+    belebele_por_Latn: flexitok/bpe_ltr_por_Latn_8000_v2
+    belebele_rus_Cyrl: flexitok/bpe_ltr_rus_Cyrl_8000_v2
+    belebele_spa_Latn: flexitok/bpe_ltr_spa_Latn_8000_v2
+    belebele_swe_Latn: flexitok/bpe_ltr_swe_Latn_8000_v2
+    belebele_tur_Latn: flexitok/bpe_ltr_tur_Latn_8000_v2
+    belebele_vie_Latn: flexitok/bpe_ltr_vie_Latn_8000_v2
+    belebele_eng_Latn: flexitok/bpe_ltr_fw_edu_8000_v2
+
+    # --- XNLI ---
+    xnli_ar: flexitok/bpe_ltr_arb_Arab_8000_v2
+    xnli_zh: flexitok/bpe_ltr_cmn_Hani_8000_v2
+    xnli_de: flexitok/bpe_ltr_deu_Latn_8000_v2
+    xnli_el: flexitok/bpe_ltr_ell_Grek_8000_v2
+    xnli_en: flexitok/bpe_ltr_fw_edu_8000_v2
+    xnli_es: flexitok/bpe_ltr_spa_Latn_8000_v2
+    xnli_fr: flexitok/bpe_ltr_fra_Latn_8000_v2
+    xnli_ru: flexitok/bpe_ltr_rus_Cyrl_8000_v2
+    xnli_tr: flexitok/bpe_ltr_tur_Latn_8000_v2
+    xnli_vi: flexitok/bpe_ltr_vie_Latn_8000_v2
+    regex:toksuite_turkish*: flexitok/bpe_ltr_tur_Latn_8000_v2
+    regex:toksuite_english*: flexitok/bpe_ltr_fw_edu_8000_v2
+    regex:toksuite_farsi*: flexitok/bpe_ltr_fas_Arab_8000_v2
+    regex:toksuite_italian*: flexitok/bpe_ltr_ita_Latn_8000_v2
+    regex:toksuite_chinese*: flexitok/bpe_ltr_cmn_Hani_8000_v2
+    regex:toksuite_math*: flexitok/bpe_ltr_fw_edu_8000_v2
+    regex:toksuite_stem*: flexitok/bpe_ltr_fw_edu_8000_v2
+
+
+generator:
+  max_tokens: 16384
+  dtype: bf16
+  add_bos: False
+
+wandb:
+  project: FlexiTok
+  name: Superset 8k_v2_oracle

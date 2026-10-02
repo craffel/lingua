@@ -1,18 +1,21 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from collections import defaultdict
-from dataclasses import asdict, dataclass, field
-from datetime import datetime
 import json
 import logging
 import os
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from pathlib import Path
+from typing import Any, List, Optional, Tuple, Union
+
+import torch
+import wandb
+from lm_eval import simple_evaluate
 from lm_eval.api.instance import Instance
 from lm_eval.api.model import LM
-from typing import Any, List, Optional, Tuple, Union
-from lm_eval import simple_evaluate
 from omegaconf import OmegaConf
-import torch
+
 from apps.main.generate import (
     PackedCausalTransformerGenerator,
     PackedCausalTransformerGeneratorArgs,
@@ -21,14 +24,22 @@ from apps.main.generate import (
 from apps.main.transformer import LMTransformer, LMTransformerArgs
 from lingua.args import dump_config
 from lingua.checkpoint import CONSOLIDATE_FOLDER, consolidate_checkpoints
-from lingua.data import init_choice_state, setup_sources
+from lingua.data import (
+    OracleRoutingArgs,
+    _sample_source_tokenizer_choice,
+    init_choice_state,
+    setup_sources,
+)
 from lingua.distributed import (
     DistributedArgs,
     dist_mean_dict,
     get_global_rank,
+    get_is_master,
     get_world_size,
     setup_torch_distributed,
 )
+from lingua.langid import GlotLIDLanguageIdentifier
+from lingua.tokenizer import SupersetTokenizer, TokenizerArgs
 
 EVAL_FOLDER_NAME = "{:010d}"
 
@@ -81,6 +92,8 @@ class EvalArgs:
     wandb: Optional[Any] = None
 
     global_step: Optional[int] = None  # for in-training evaluation
+    tokenizer: Optional[TokenizerArgs] = field(default=None)
+    routing: OracleRoutingArgs = field(default_factory=OracleRoutingArgs)
 
 
 def all_dicts_same(dict_list):
@@ -104,13 +117,54 @@ class MockAccelerator:
 
 # Light wrapper around generator for lm-eval harness
 class EvalHarnessLM(LM):
-    def __init__(self, generator):
+    def __init__(self, generator, routing: OracleRoutingArgs):
         super().__init__()
         self.generator = generator
+        self.routing = routing
         self.accelerator = MockAccelerator()
         self._rank = get_global_rank()
         self._world_size = get_world_size()
-        self.device = generator.device
+        self._langid = GlotLIDLanguageIdentifier(routing.langid) if routing.langid.enabled else None
+        # self.device = generator.device
+
+    def _get_tokenizer_choices(self, requests: List[Instance]) -> Optional[List[Optional[int]]]:
+        """Return per-request tokenizer choices via oracle routing, or None to use existing logic."""
+        if not isinstance(self.generator.tokenizer, SupersetTokenizer):
+            return None
+        if self.routing.task_to_tokenizer:
+            choices = [
+                _sample_source_tokenizer_choice(
+                    source=getattr(req, "task_name", None),
+                    tokenizer=self.generator.tokenizer,
+                    source_to_tokenizer=self.routing.task_to_tokenizer,
+                    suitable_tokenizer_probability=self.routing.suitable_tokenizer_probability,
+                )
+                for req in requests
+            ]
+            import pandas as pd
+            pairs_choices = pd.DataFrame.from_records([(getattr(req, 'task_name', None), choice) for req, choice in zip(requests, choices)], columns=["task_name", "tok_choice"])
+            pairs_choices = pairs_choices.groupby("task_name").nunique()
+            print(f"Sampled tokenizer choices for requests: \n{pairs_choices.to_string()}")
+            return choices
+
+        if self._langid is not None:
+            predicted_langs = self._langid.predict_batch([req.args[0] for req in requests])
+            choices = [
+                _sample_source_tokenizer_choice(
+                    source=lang,
+                    tokenizer=self.generator.tokenizer,
+                    source_to_tokenizer=self.routing.langid.lang_to_tokenizer,
+                    suitable_tokenizer_probability=self.routing.suitable_tokenizer_probability,
+                )
+                for lang in predicted_langs
+            ]
+            import pandas as pd
+            pairs_choices = pd.DataFrame.from_records(list(zip(predicted_langs, choices)), columns=["predicted_lang", "tok_choice"])
+            pairs_choices = pairs_choices.groupby("predicted_lang").nunique()
+            print(f"LangID-routed tokenizer choices for requests: \n{pairs_choices.to_string()}")
+            return choices
+
+        return None
 
     def generate_until(self, requests: List[Instance]) -> List[str]:
         prompts, gen_args = zip(*[req.args for req in requests])
@@ -120,12 +174,20 @@ class EvalHarnessLM(LM):
         top_p = gen_args.get("top_p", None)
         top_k = gen_args.get("top_k", None)
         until = gen_args.get("until", [])
+        max_gen_toks = gen_args.get("max_gen_toks", None)
 
         self.generator.temperature = temperature
         self.generator.top_p = top_p
         self.generator.top_k = top_k
         self.generator.until = until
-        generations, _, _ = self.generator.generate(prompts)
+        prev_max_gen_len = self.generator.max_gen_len
+        if max_gen_toks is not None:
+            self.generator.max_gen_len = int(max_gen_toks)
+        tokenizer_choices = self._get_tokenizer_choices(requests)
+        try:
+            generations, _, _ = self.generator.generate(prompts, tokenizer_choices=tokenizer_choices)
+        finally:
+            self.generator.max_gen_len = prev_max_gen_len
         filtered_gen = []
         for g in generations:
             for e in until:
@@ -135,41 +197,74 @@ class EvalHarnessLM(LM):
 
     def loglikelihood(self, requests: List[Instance]) -> List[Tuple[float, bool]]:
         prompts, continuations = zip(*[req.args for req in requests])
-        inputs = [req.args[0] + req.args[1] for req in requests]
+
         max_gen_len = self.generator.max_gen_len
-        # We temporarily lower max gen len
         self.generator.max_gen_len = 1
-        _, lls, greedy = self.generator.generate(inputs)
-        results = []
-        for p, ll, gr in zip(prompts, lls, greedy):
-            p_len = len(self.generator.tokenizer.encode(p, add_bos=False, add_eos=False))
-            results.append((ll[p_len:].sum().item(), gr[p_len:].all().item()))
+
+        tokenizer_choices = self._get_tokenizer_choices(requests)
+        tok = self.generator.tokenizer
+        logger.info(f"Tokenizing {len(prompts)} prompts and continuations")
+        if tokenizer_choices is None and isinstance(tok, SupersetTokenizer):
+            # Fallback: random sampling, consistent per unique prompt
+            processed_prompts: dict = {}
+            tokenizer_choices = []
+            for prompt in prompts:
+                if prompt not in processed_prompts:
+                    tc, _ = tok.sample_tokenizer()
+                    processed_prompts[prompt] = tc
+                tokenizer_choices.append(processed_prompts[prompt])
+
+        # Pre-tokenize context and continuation separately to avoid BPE boundary
+        # issues: encode("ctx" + "cont") != encode("ctx") + encode("cont") when
+        # characters at the junction form new BPE merges. Short continuations
+        # (e.g. " A", " B" in ARC Easy) are disproportionately affected.
+        if tokenizer_choices is not None:
+            ctx_toks = [tok.encode(p, add_bos=False, add_eos=False, tokenizer_choice=tc) for p, tc in zip(prompts, tokenizer_choices)]
+            cont_toks = [tok.encode(c, add_bos=False, add_eos=False, tokenizer_choice=tc) for c, tc in zip(continuations, tokenizer_choices)]
+        else:
+            ctx_toks = [tok.encode(p, add_bos=False, add_eos=False) for p in prompts]
+            cont_toks = [tok.encode(c, add_bos=False, add_eos=False) for c in continuations]
+
+        bos = [tok.bos_id] if (self.generator.add_bos and getattr(tok, "bos_id", None) is not None) else []
+        token_inputs = [bos + ctx + cont for ctx, cont in zip(ctx_toks, cont_toks)]
+        p_lens = [len(ctx) for ctx in ctx_toks]
+        # import code; code.interact(local=dict(locals(), **globals()))
+        _, lls, greedy = self.generator.generate(token_inputs)
 
         self.generator.max_gen_len = max_gen_len
+
+        results = []
+        for ll, gr, p_len, cont in zip(lls, greedy, p_lens, continuations):
+            if len(ll) <= p_len:
+                logger.warning(f"Loglikelihood for continuation is empty, prompt tokens: {p_len}, continuation: {cont!r}")
+            results.append((ll[p_len:].sum().item(), gr[p_len:].all().item()))
         return results
 
     def loglikelihood_rolling(self, requests: List[Instance]) -> List[float]:
         prompts = [req.args[0] for req in requests]
         max_gen_len = self.generator.max_gen_len
-        # We temporarily lower max gen len
         self.generator.max_gen_len = 1
-        _, lls, _ = self.generator.generate(prompts)
+        tokenizer_choices = self._get_tokenizer_choices(requests)
+        # import code; code.interact(local=dict(locals(), **globals()))
+        _, lls, _ = self.generator.generate(prompts, tokenizer_choices=tokenizer_choices)
         results = []
         for ll in lls:
-            results.append((ll.sum().item(),))
+            results.append(ll.sum().item())  # (total_loglikelihood)
         self.generator.max_gen_len = max_gen_len
-
         return results
     
 
-def eval_on_val(generator, val_args: ValidationArgs, train_cfg):
+def eval_on_val(generator, val_args: ValidationArgs, train_cfg, routing: Optional[OracleRoutingArgs] = None):
     srcs = {}
+    path_to_source_name = {}
     for src in val_args.sources:
         path = os.path.join(val_args.root_dir, src)
         srcs[path] = 1.0
+        path_to_source_name[path] = src
     for src in train_cfg.data.sources:
         path = os.path.join(train_cfg.data.root_dir, src)
         srcs[path] = 1.0
+        path_to_source_name[path] = src
 
     multi_state = init_choice_state("", srcs, 0, get_global_rank(), get_world_size(), "*.val.jsonl")
     path_to_iter = setup_sources(multi_state)
@@ -188,8 +283,21 @@ def eval_on_val(generator, val_args: ValidationArgs, train_cfg):
                 break
             content_key = "text" if ("text" in content) else "content"
             texts.append(content[content_key])
-        
-        _, loglikelihood, _ = generator.generate(texts)
+
+        tokenizer_choices = None
+        if routing is not None and routing.source_to_tokenizer and isinstance(generator.tokenizer, SupersetTokenizer):
+            source_name = path_to_source_name.get(src, src)
+            tc = _sample_source_tokenizer_choice(
+                source=source_name,
+                tokenizer=generator.tokenizer,
+                source_to_tokenizer=routing.source_to_tokenizer,
+                suitable_tokenizer_probability=routing.suitable_tokenizer_probability,
+            )
+            if tc is not None:
+                tokenizer_choices = [tc] * len(texts)
+                logger.info(f"Oracle routing: source '{source_name}' -> tokenizer index {tc}")
+
+        _, loglikelihood, _ = generator.generate(texts, tokenizer_choices=tokenizer_choices)
 
         metrics = defaultdict(list)
         for i, ll in enumerate(loglikelihood):
@@ -215,7 +323,10 @@ def eval_on_val(generator, val_args: ValidationArgs, train_cfg):
 
     return all_val_metrics
 
+
 def launch_eval(cfg: EvalArgs):
+    torch.backends.cuda.enable_cudnn_sdp(False)
+
     if not torch.distributed.is_initialized():
         setup_torch_distributed(DistributedArgs())
     if (
@@ -229,30 +340,47 @@ def launch_eval(cfg: EvalArgs):
         if not consolidate_path.exists() and get_global_rank() == 0:
             consolidate_path = consolidate_checkpoints(cfg.ckpt_dir)
 
+    run = None
+    if get_is_master():
+        if cfg.wandb is not None:
+            run = wandb.init(**cfg.wandb, config=asdict(cfg))
     Path(cfg.dump_dir).mkdir(parents=True, exist_ok=True)
     dump_config(cfg, Path(cfg.dump_dir) / "config.yaml", log_config=False)
 
     consolidate_path = str(consolidate_path)
+    # if dist.is_initialized():
+    #     print(f"Rank {dist.get_rank()} is using GPU {torch.cuda.current_device()}")
     torch.distributed.barrier()
     logger.info("Loading model")
     model, tokenizer, train_cfg = load_consolidated_model_and_tokenizer(
         consolidate_path,
         model_cls=LMTransformer,
         model_args_cls=LMTransformerArgs,
+        tokenizer_args=cfg.tokenizer,
     )
+    model = model.to(torch.bfloat16)
     logger.info("Model loaded")
     model.eval()
     generator = PackedCausalTransformerGenerator(cfg.generator, model, tokenizer)
 
-    wrap = EvalHarnessLM(generator)
+    wrap = EvalHarnessLM(generator, routing=cfg.routing)
+    ckpt_path = Path(consolidate_path)
+    config = ckpt_path / "params.json"
+    config = OmegaConf.load(config)
+    # if 
     results = simple_evaluate(wrap, **asdict(cfg.harness))
     val_results =  None
     if cfg.validation:
-        val_results = eval_on_val(generator, cfg.validation, train_cfg)
+        val_results = eval_on_val(generator, cfg.validation, train_cfg, routing=cfg.routing)
     if get_global_rank() == 0:
         with open(Path(cfg.dump_dir) / "results.json", "w") as f:
             f.write(json.dumps(results, default=lambda x: str(type(x))))
         logger.info(f"All evaluation results: {results['results']}")
+        if run is not None:
+            # {"results": {"arc_challenge": {"alias": "arc_challenge", "acc,none": 0.24744027303754265, "acc_stderr,none": 0.01261035266329267, "acc_norm,none": 0.2551194539249147, "acc_norm_stderr,none": 0.012739038695202102}, "arc_easy": {"alias": "arc_ea
+            for task, res_ in results["results"].items():
+                log_dct = {f"{task}/{metric}".replace(",none", ""): val for metric, val in res_.items() if metric != "alias"}
+                wandb.log(log_dct)
         if val_results is not None:
             with open(Path(cfg.dump_dir) / "validation.json", "w") as f:
                 f.write(json.dumps(val_results))
@@ -279,7 +407,9 @@ def launch_eval(cfg: EvalArgs):
                 file=open(val_log_path, mode="a"),
                 flush=True,
             )
-    
+    if cfg.harness.log_samples and get_global_rank() == 0:
+        with open(Path(cfg.dump_dir) / "samples.json", "w") as f:
+            json.dump(results.get("samples", []), f, default=str)
     del generator
 
 

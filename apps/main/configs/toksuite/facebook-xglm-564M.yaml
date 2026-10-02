@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/facebook-xglm-564M/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: facebook/xglm-564M
+dump_dir: /fsx/craffel/toksuite/lingua_logs/facebook-xglm-564M/
+name: toksuite_facebook-xglm-564M

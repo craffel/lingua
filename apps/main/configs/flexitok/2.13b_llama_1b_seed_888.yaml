@@ -1,0 +1,24 @@
+# python -m lingua.stool script=apps.main.train config=[apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/flexitok/2.13b_llama_1b_seed_888.yaml]
+# python -m lingua.stool_ccdb script=apps.main.train time=240 launcher=bash mem=64G nodes=1 ngpu=1 ncpu=2 config=[apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/flexitok/2.13b_llama_1b_seed_888.yaml]
+
+
+name: flexitok_llama_seed_888
+dump_dir: /fsx/craffel/lingua_logs/flexitok_llama_seed_888/
+seed: 888
+
+
+data:
+  seed: 888
+
+model:
+  seed: 888
+  
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/flexitok_llama_seed_888/
+  init_ckpt_path:   /fsx/craffel/lingua_logs/checkpoints/flexitok_llama_seed_888/init
+  dump:
+    every: 10000
+    keep: -1
+  eval:
+    every: 10000
+    keep: -1

@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/tokenmonster-englishcode-32000-consistent-v1/checkpoints
+data:
+  tokenizer:
+    name: tokenmonster
+    path: tokenmonster/englishcode-32000-consistent-v1
+dump_dir: /fsx/craffel/toksuite/lingua_logs/tokenmonster-englishcode-32000-consistent-v1/
+name: toksuite_tokenmonster-englishcode-32000-consistent-v1

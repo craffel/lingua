@@ -1,0 +1,238 @@
+dump_dir: /scratch/gsa/train/supertokenizer-new-new
+name: supertokenizer
+# dump_dir: !!!CHANGE_THIS!!!
+steps: 100_000
+# steps: 60_000
+probe_freq: null
+seed: 777
+grad_acc_steps: 16
+
+optim:
+  lr: 3e-3
+  weight_decay: 0.033
+  warmup: 5000
+  lr_min_ratio: 0.000001
+  clip: 1.0
+
+distributed:
+  fsdp_type: full_shard
+  model_dtype: bf16
+  matmul_allow_tf32: false
+  selective_activation_checkpointing: false
+  # compile: false 
+  # tp_size: 2
+  tp_size: 1
+  compile: true
+
+model:
+  dim: 2048
+  n_layers: 25
+  n_heads: 16
+  # vocab_size: 200019
+  # vocab_size: 942324
+  vocab_size: 851586
+  use_factorized_embeddings: True
+  factorized_embedding_dim: 512
+
+
+
+data:
+  root_dir: /scratch/gsa/supertokenizer_data/
+  # root_dir: /scratch/gsa/data/
+  sources:
+    arb_Arab: 0.0390539510948888
+    ces_Latn: 0.0413374092110347
+    cmn_Hani: 0.0756779202306856
+    dan_Latn: 0.0360971449451171
+    deu_Latn: 0.0699875567421703
+    ell_Grek: 0.0389451478146709
+    fas_Arab: 0.0342724373718459
+    fw_edu: 40
+    fra_Latn: 0.0636392601130893
+    hun_Latn: 0.041199095593718
+    ind_Latn: 0.0448870090989146
+    ita_Latn: 0.0540093951703108
+    jpn_Jpan: 0.0592184025228167
+    nld_Latn: 0.0462993877702482
+    pol_Latn: 0.0490200174287185
+    por_Latn: 0.0502355280511376
+    rus_Cyrl: 0.0833663595718768
+    spa_Latn: 0.0645371321806115
+    swe_Latn: 0.0360599609030777
+    tur_Latn: 0.0392426324736215
+    vie_Latn: 0.0329142517114456
+  batch_size: 1
+  # batch_size: 2
+  prefetch_size: 1024
+  seq_len: 4096
+  n_views: 2
+  load_async: true
+  add_eos: true
+  # tokenizer:
+  #   name: huggingface
+  #   path: meta-llama/Llama-3.2-1B
+
+  tokenizer:
+      name: supertokenizer
+      seed: 42
+      tokenizers:
+        - name: huggingface
+          # path: CohereLabs/aya-expanse-8b
+          path: flexitok/reindexed-CohereLabs-aya-expanse-8b
+          load_supermapping: False
+        - name: huggingface
+          path: flexitok/reindexed-bigscience-bloom
+          # path: bigscience/bloom
+          load_supermapping: False
+        - name: huggingface
+          # path: common-pile/comma-v0.1
+          path: flexitok/reindexed-common-pile-comma-v0.1
+          load_supermapping: False
+        - name: huggingface
+          # path: google/gemma-2-2b
+          path: flexitok/reindexed-google-gemma-2-2b
+          load_supermapping: False
+        - name: huggingface
+          # path: gpt2
+          path: flexitok/reindexed-gpt2
+          load_supermapping: False
+        - name: huggingface
+          # path: meta-llama/Llama-3.2-1B
+          path: flexitok/reindexed-meta-llama-Llama-3.2-1B
+          load_supermapping: False
+        - name: huggingface
+          # path: google-bert/bert-base-multilingual-cased
+          path: flexitok/reindexed-google-bert-bert-base-multilingual-cased
+          load_supermapping: False
+        - name: huggingface
+          # path: microsoft/Phi-3-mini-4k-instruct
+          path: flexitok/reindexed-microsoft-Phi-3-mini-4k-instruct
+          load_supermapping: False
+        - name: huggingface
+          # path: Qwen/Qwen3-8B
+          path: flexitok/reindexed-Qwen-Qwen3-8B
+          load_supermapping: False
+        - name: huggingface
+          # path: facebook/xglm-564M
+          path: flexitok/reindexed-facebook-xglm-564M
+          load_supermapping: False
+        - name: huggingface
+          path: google/byt5-small
+          load_supermapping: True
+        - name: tiktoken
+          path: gpt-4o
+          load_supermapping: True
+        - name: tekken
+          path: tekken
+          load_supermapping: True
+        - name: tokenmonster
+          path: englishcode-32000-consistent-v1
+          load_supermapping: True
+
+profiling:
+  run: true
+  mem_warmup: 0
+  mem_steps: 4
+  profile_warmup: 100
+  profile_steps: 4
+
+checkpoint:
+  # init_ckpt_path: /scratch/gsa/train/supertokenizer/checkpoints/0000002400/
+  # init_ckpt_path: /scratch/gsa/train/supertokenizer-new/checkpoints/0000002100/
+  # init_ckpt_path: /scratch/gsa/train/supertokenizer-new/checkpoints/0000003800/
+  init_ckpt_path: 
+  dump:
+    every: 10
+    # every: 100
+    keep: 3
+  eval:
+    every: 1000000
+    keep: -1
+
+logging:
+  freq: 1
+  # wandb: 
+  #   project: supertokenizer
+  #   entity: gsaltintas
+  #   tags: 
+  #     - pre-training
+  #     # - debug
+  #   group: supertokenizer
+  #   # group: llama-3.2
+  #   # name: Optional[str] = None
+  #   # notes: Optional[str] = None
+  #   sync_tensorboard: true
+  #   # resume_from: Optional[str] = None
+
+async_eval_gpus: 8
+eval:
+  harness:
+    tasks:
+      # --- General Reasoning ---
+      - hellaswag
+      - piqa
+      - arc_easy
+      - arc_challenge
+
+      # --- MMLU / Base 44 (Multi-subject Knowledge) ---
+      - include_base_44_arabic
+      # no czech or swedish
+      - include_base_44_chinese
+      - include_base_44_german
+      - include_base_44_greek
+      - include_base_44_persian
+      - include_base_44_french
+      - include_base_44_hungarian
+      - include_base_44_indonesian
+      - include_base_44_italian
+      - include_base_44_japanese
+      - include_base_44_dutch
+      - include_base_44_polish
+      - include_base_44_portuguese
+      - include_base_44_russian
+      - include_base_44_spanish
+      - include_base_44_turkish
+      - include_base_44_vietnamese
+
+      # --- Belebele (Reading Comprehension) ---
+      - belebele_arb_Arab
+      - belebele_ces_Latn
+      - belebele_zho_Hans
+      - belebele_dan_Latn
+      - belebele_deu_Latn
+      - belebele_ell_Grek
+      - belebele_pes_Arab
+      - belebele_fra_Latn
+      - belebele_hun_Latn
+      - belebele_ind_Latn
+      - belebele_ita_Latn
+      - belebele_jpn_Jpan
+      - belebele_nld_Latn
+      - belebele_pol_Latn
+      - belebele_por_Latn
+      - belebele_rus_Cyrl
+      - belebele_spa_Latn
+      - belebele_swe_Latn
+      - belebele_tur_Latn
+      - belebele_vie_Latn
+      - belebele_eng_Latn  # Included as standard baseline
+
+      # --- XNLI (Natural Language Inference) ---
+      - xnli_ar
+      - xnli_zh
+      - xnli_de
+      - xnli_el
+      - xnli_en
+      - xnli_es
+      - xnli_fr
+      - xnli_hi
+      - xnli_ru
+      - xnli_tr
+      - xnli_vi
+
+  # validation:
+  #   max_steps: 1000
+  generator:
+    max_tokens: 16384
+    dtype: bf16
+    add_bos: False

@@ -2,8 +2,9 @@
 
 import argparse
 import logging
-from omegaconf import OmegaConf, DictConfig, ListConfig
 from typing import Type, TypeVar
+
+from omegaconf import DictConfig, ListConfig, OmegaConf, open_dict
 
 logger = logging.getLogger()
 
@@ -44,6 +45,13 @@ def dataclass_from_dict(cls: Type[T], data: dict, strict: bool = True) -> T:
     override = OmegaConf.create(data)
     return OmegaConf.to_object(OmegaConf.merge(base, override))
 
+def dataclass_from_dict_relaxed(cls: Type[T], data: dict, strict: bool = True) -> T:
+    base = OmegaConf.structured(cls())
+    OmegaConf.set_struct(base, strict)
+    override = OmegaConf.create(data)
+    with open_dict(base):
+        result = OmegaConf.merge(base, override)
+    return OmegaConf.to_object(result)
 
 def dataclass_to_dict(dataclass_instance: T) -> dict:
     """

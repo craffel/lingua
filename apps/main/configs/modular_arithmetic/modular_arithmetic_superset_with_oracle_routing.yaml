@@ -1,0 +1,91 @@
+## use with apps/main/configs/modular_arithmetic/base.yaml
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=bash script=apps.main.train_answer_only config=["apps/main/configs/modular_arithmetic/base.yaml","apps/main/configs/modular_arithmetic/modular_arithmetic_superset_with_oracle_routing.yaml"]
+## python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=h100 launcher=sbatch script=apps.main.train_answer_only config=["apps/main/configs/modular_arithmetic/base.yaml","apps/main/configs/modular_arithmetic/modular_arithmetic_superset_with_oracle_routing.yaml"]
+
+dump_dir: /fsx/craffel/lingua_logs/flexitok_superset_mod_tokenizers_oracle_routing
+name: flexitok_superset_mod_tokenizers_oracle_routing
+grad_acc_steps: 4
+
+model:
+  vocab_size: 100007
+
+data:
+  batch_size: 128
+
+  ## Oracle routing: always use dataset-provided tokenizer preference when it maps.
+  suitable_tokenizer_key: suitable_tokenizer
+  suitable_tokenizer_probability: 1.0
+  suitable_tokenizer_map:
+    ## Exact superset keys
+    flexitok/mod-tokenizers-individual: flexitok/mod-tokenizers-individual
+    flexitok/mod-tokenizers-ltr_2digit: flexitok/mod-tokenizers-ltr_2digit
+    flexitok/mod-tokenizers-ltr_3digit: flexitok/mod-tokenizers-ltr_3digit
+    flexitok/mod-tokenizers-ltr_4digit: flexitok/mod-tokenizers-ltr_4digit
+    flexitok/mod-tokenizers-ltr_5digit: flexitok/mod-tokenizers-ltr_5digit
+    flexitok/mod-tokenizers-rtl_2digit: flexitok/mod-tokenizers-rtl_2digit
+    flexitok/mod-tokenizers-rtl_3digit: flexitok/mod-tokenizers-rtl_3digit
+    flexitok/mod-tokenizers-rtl_4digit: flexitok/mod-tokenizers-rtl_4digit
+    flexitok/mod-tokenizers-rtl_5digit: flexitok/mod-tokenizers-rtl_5digit
+
+    ## Common dataset aliases
+    mod-tokenizers-individual: flexitok/mod-tokenizers-individual
+    mod-tokenizers-ltr_2digit: flexitok/mod-tokenizers-ltr_2digit
+    mod-tokenizers-ltr_3digit: flexitok/mod-tokenizers-ltr_3digit
+    mod-tokenizers-ltr_4digit: flexitok/mod-tokenizers-ltr_4digit
+    mod-tokenizers-ltr_5digit: flexitok/mod-tokenizers-ltr_5digit
+    mod-tokenizers-rtl_2digit: flexitok/mod-tokenizers-rtl_2digit
+    mod-tokenizers-rtl_3digit: flexitok/mod-tokenizers-rtl_3digit
+    mod-tokenizers-rtl_4digit: flexitok/mod-tokenizers-rtl_4digit
+    mod-tokenizers-rtl_5digit: flexitok/mod-tokenizers-rtl_5digit
+
+    ## Short aliases
+    individual: flexitok/mod-tokenizers-individual
+    ltr_2digit: flexitok/mod-tokenizers-ltr_2digit
+    ltr_3digit: flexitok/mod-tokenizers-ltr_3digit
+    ltr_4digit: flexitok/mod-tokenizers-ltr_4digit
+    ltr_5digit: flexitok/mod-tokenizers-ltr_5digit
+    rtl_2digit: flexitok/mod-tokenizers-rtl_2digit
+    rtl_3digit: flexitok/mod-tokenizers-rtl_3digit
+    rtl_4digit: flexitok/mod-tokenizers-rtl_4digit
+    rtl_5digit: flexitok/mod-tokenizers-rtl_5digit
+    complex: random
+
+  tokenizer:
+    name: supertokenizer
+    seed: 42
+    superset_code_name: mod_tokenizers
+    n_words: 100007
+
+    tokenizers:
+      - name: huggingface
+        path: flexitok/mod-tokenizers-individual
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-ltr_3digit
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-ltr_2digit
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-ltr_4digit
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-ltr_5digit
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-rtl_2digit
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-rtl_3digit
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-rtl_4digit
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/mod-tokenizers-rtl_5digit
+        load_supermapping: True
+
+logging:
+  wandb: null
+#     name: superset_mod_tokenizers_oracle_routing
+#     group: superset-oracle-routing

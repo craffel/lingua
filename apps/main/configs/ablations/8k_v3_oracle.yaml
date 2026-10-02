@@ -1,0 +1,109 @@
+# Config for super vocab built from tokenizers: flexitok/reindexed-flexitok-bpe_ltr_arb_Arab_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_ces_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_dan_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_deu_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_ell_Grek_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_fas_Arab_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_fra_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_fw_edu_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_hun_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_ind_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_ita_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_nld_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_pol_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_por_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_rus_Cyrl_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_spa_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_swe_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v3, flexitok/reindexed-flexitok-bpe_ltr_vie_Latn_8000_v3
+## Training superset tokenizer with individual tokenizers trained on Fineweb-2-hq
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+##TODO: add router details, make sure name is correct
+# python -m lingua.stool script=apps.main.train config=[/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/8k_v3_oracle.yaml]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=[apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/8k_v3_oracle.yaml]
+# python -m lingua.stool script=apps.main.train config=[/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/8k_v3_oracle.yaml]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=[apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/8k_v3_oracle.yaml]
+
+model:
+  vocab_size: 119716
+name: 8k_v3
+dump_dir: /fsx/craffel/lingua_logs/8k_v3
+data:
+  tokenizer:
+    name: supertokenizer
+    seed: 42
+    superset_code_name: 8k_v3
+    n_words: 119716
+    tokenizers:
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_arb_Arab_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_ces_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_dan_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_deu_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_ell_Grek_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_fas_Arab_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_fra_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_fw_edu_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_hun_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_ind_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_ita_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_nld_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_pol_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_por_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_rus_Cyrl_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_spa_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_swe_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v3
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_vie_Latn_8000_v3
+      load_supermapping: false
+  routing:
+    suitable_tokenizer_probability: 1.0
+    source_to_tokenizer:
+      arb_Arab: flexitok/reindexed-flexitok-bpe_ltr_arb_Arab_8000_v3
+      ces_Latn: flexitok/reindexed-flexitok-bpe_ltr_ces_Latn_8000_v3
+      cmn_Hani: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000_v3
+      dan_Latn: flexitok/reindexed-flexitok-bpe_ltr_dan_Latn_8000_v3
+      deu_Latn: flexitok/reindexed-flexitok-bpe_ltr_deu_Latn_8000_v3
+      ell_Grek: flexitok/reindexed-flexitok-bpe_ltr_ell_Grek_8000_v3
+      fas_Arab: flexitok/reindexed-flexitok-bpe_ltr_fas_Arab_8000_v3
+      fra_Latn: flexitok/reindexed-flexitok-bpe_ltr_fra_Latn_8000_v3
+      fw_edu: flexitok/reindexed-flexitok-bpe_ltr_fw_edu_8000_v3
+      hun_Latn: flexitok/reindexed-flexitok-bpe_ltr_hun_Latn_8000_v3
+      ind_Latn: flexitok/reindexed-flexitok-bpe_ltr_ind_Latn_8000_v3
+      ita_Latn: flexitok/reindexed-flexitok-bpe_ltr_ita_Latn_8000_v3
+      jpn_Jpan: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v3
+      nld_Latn: flexitok/reindexed-flexitok-bpe_ltr_nld_Latn_8000_v3
+      pol_Latn: flexitok/reindexed-flexitok-bpe_ltr_pol_Latn_8000_v3
+      por_Latn: flexitok/reindexed-flexitok-bpe_ltr_por_Latn_8000_v3
+      rus_Cyrl: flexitok/reindexed-flexitok-bpe_ltr_rus_Cyrl_8000_v3
+      spa_Latn: flexitok/reindexed-flexitok-bpe_ltr_spa_Latn_8000_v3
+      swe_Latn: flexitok/reindexed-flexitok-bpe_ltr_swe_Latn_8000_v3
+      tur_Latn: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v3
+      vie_Latn: flexitok/reindexed-flexitok-bpe_ltr_vie_Latn_8000_v3
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/8k_v3

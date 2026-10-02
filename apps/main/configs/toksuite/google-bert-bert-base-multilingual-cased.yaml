@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/google-bert-bert-base-multilingual-cased/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: google-bert/bert-base-multilingual-cased
+dump_dir: /fsx/craffel/toksuite/lingua_logs/google-bert-bert-base-multilingual-cased/
+name: toksuite_google-bert-bert-base-multilingual-cased
