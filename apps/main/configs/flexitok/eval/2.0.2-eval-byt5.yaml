@@ -1,0 +1,12 @@
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 mem=64G time=800 nodes=1 gpu_type=l40s launcher=bash script=apps.main.eval config=["apps/main/configs/flexitok/eval/eval_base.yaml","apps/main/configs/flexitok/eval/2.0.2-eval-byt5.yaml"]
+
+name: "flexitok_byt5"
+dump_dir: /fsx/craffel/lingua_logs/flexitok_byt5/eval/
+ckpt_dir: /fsx/craffel/lingua_logs/flexitok_byt5/checkpoints/0000100000/
+
+wandb:
+  name: ByT5
+
+tokenizer:
+  name: huggingface
+  path: google/byt5-small

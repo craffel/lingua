@@ -1,0 +1,201 @@
+dump_dir: /fsx/craffel/lingua_logs/flexitok_llama/
+name: flexitok_llama
+steps: 100_000
+probe_freq: null
+seed: 777
+grad_acc_steps: 8
+
+
+optim:
+  lr: 1e-3
+  weight_decay: 0.1
+  epsilon: 1.0e-08
+  scheduler: cosine
+  warmup: 2000
+  lr_min_ratio: 0.000001
+  clip: 1.0
+
+distributed:
+  fsdp_type: full_shard
+  model_dtype: bf16
+  matmul_allow_tf32: false
+  selective_activation_checkpointing: false
+  tp_size: 1
+  compile: true
+
+model:
+  dim: 2048
+  n_layers: 25
+  n_heads: 16
+  weight_tying: false
+
+data:
+  root_dir: /scratch/craffel/lingua/data/flexitok/
+  sources:
+    # eng_Latn: 0.4
+    fw_edu: 0.4
+    dan_Latn: 0.0216582869670702
+    swe_Latn: 0.0216359765418466
+    vie_Latn: 0.0197485510268674
+    hun_Latn: 0.0247194573562308
+    fas_Arab: 0.0205634624231076
+    tur_Latn: 0.0235455794841729
+    ces_Latn: 0.0248024455266208
+    arb_Arab: 0.0234323706569333
+    ell_Grek: 0.0233670886888026
+    ind_Latn: 0.0269322054593488
+    nld_Latn: 0.0277796326621489
+    pol_Latn: 0.0294120104572311
+    por_Latn: 0.0301413168306825
+    ita_Latn: 0.0324056371021865
+    jpn_Jpan: 0.03553104151369
+    fra_Latn: 0.0381835560678536
+    spa_Latn: 0.0387222793083669
+    deu_Latn: 0.0419925340453022
+    cmn_Hani: 0.0454067521384114
+    rus_Cyrl: 0.0500198157431261
+
+  batch_size: 4
+  prefetch_size: 1024
+  seq_len: 4096
+  n_views: 2
+  load_async: true
+  add_eos: true
+  tokenizer:
+    name: huggingface
+    path: meta-llama/Llama-3.2-1B
+
+profiling:
+  run: true
+  mem_warmup: 0
+  mem_steps: 4
+  profile_warmup: 100
+  profile_steps: 4
+
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/flexitok_llama/
+  init_ckpt_path: 
+  dump:
+    every: 10000
+    keep: -1
+  eval:
+    every: 10000
+    keep: -1
+
+logging:
+  freq: 1
+  wandb:
+    project: MoTo-Training
+    entity: raffel-reports
+
+async_eval_gpus: 8
+eval:
+  harness:
+    tasks:
+      # --- General Reasoning ---
+      - hellaswag
+      - piqa
+      - arc_easy
+      - arc_challenge
+
+      # # --- MMLU / Base 44 ---
+      # - include_base_44_arabic
+      # # no czech, swedish, danish
+      # - include_base_44_chinese
+      # - include_base_44_german
+      # - include_base_44_greek
+      # - include_base_44_persian
+      # - include_base_44_french
+      # - include_base_44_hungarian
+      # - include_base_44_indonesian
+      # - include_base_44_italian
+      # - include_base_44_japanese
+      # - include_base_44_dutch
+      # - include_base_44_polish
+      # - include_base_44_portuguese
+      # - include_base_44_russian
+      # - include_base_44_spanish
+      # - include_base_44_turkish
+      # - include_base_44_vietnamese
+
+      # # --- Belebele ---
+      # - belebele_arb_Arab
+      # - belebele_ces_Latn
+      # - belebele_zho_Hans
+      # - belebele_dan_Latn
+      # - belebele_deu_Latn
+      # - belebele_ell_Grek
+      # - belebele_pes_Arab
+      # - belebele_fra_Latn
+      # - belebele_hun_Latn
+      # - belebele_ind_Latn
+      # - belebele_ita_Latn
+      # - belebele_jpn_Jpan
+      # - belebele_nld_Latn
+      # - belebele_pol_Latn
+      # - belebele_por_Latn
+      # - belebele_rus_Cyrl
+      # - belebele_spa_Latn
+      # - belebele_swe_Latn
+      # - belebele_tur_Latn
+      # - belebele_vie_Latn
+      # - belebele_eng_Latn  
+
+      # --- XNLI ---
+      - xnli_ar
+      - xnli_zh
+      - xnli_de
+      - xnli_el
+      - xnli_en
+      - xnli_es
+      - xnli_fr
+      - xnli_ru
+      - xnli_tr
+      - xnli_vi
+
+      - toksuite_english
+      - toksuite_chinese
+      - toksuite_turkish
+      - toksuite_italian
+      - toksuite_farsi
+      - toksuite_math
+      - toksuite_stem
+
+      # - flores200
+
+      - xcopa_id
+      - xcopa_it
+      - xcopa_tr
+      - xcopa_vi
+      - xcopa_zh
+      - xstorycloze_ar
+      - xstorycloze_en
+      - xstorycloze_es
+      - xstorycloze_id
+      - xstorycloze_ru
+      - xstorycloze_zh
+      - paws_de
+      - paws_en
+      - paws_es
+      - paws_fr
+      - paws_ja
+      - paws_zh
+      - hellaswag_ar
+      - hellaswag_da
+      - hellaswag_de
+      - hellaswag_fr
+      - hellaswag_hu
+      - hellaswag_id
+      - hellaswag_it
+      - hellaswag_nl
+      - hellaswag_pt
+      - hellaswag_ru
+      - hellaswag_sv
+      - hellaswag_vi
+      - hellaswag_es
+
+
+  generator:
+    max_tokens: 16384
+    dtype: bf16
+    add_bos: False

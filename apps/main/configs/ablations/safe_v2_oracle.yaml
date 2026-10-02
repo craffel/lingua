@@ -1,0 +1,233 @@
+# Config for super vocab built from tokenizers: flexitok/reindexed-flexitok-bpe_arb_Arab_8000, flexitok/reindexed-flexitok-bpe_ces_Latn_8000, flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000_v2, flexitok/reindexed-flexitok-bpe_dan_Latn_8000, flexitok/reindexed-flexitok-bpe_deu_Latn_8000, flexitok/reindexed-flexitok-bpe_ell_Grek_8000, flexitok/reindexed-flexitok-bpe_fas_Arab_8000, flexitok/reindexed-flexitok-bpe_fra_Latn_8000, flexitok/reindexed-flexitok-bpe_fw_edu_8000, flexitok/reindexed-flexitok-bpe_hun_Latn_8000, flexitok/reindexed-flexitok-bpe_ind_Latn_8000, flexitok/reindexed-flexitok-bpe_ita_Latn_8000, flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v2, flexitok/reindexed-flexitok-bpe_nld_Latn_8000, flexitok/reindexed-flexitok-bpe_pol_Latn_8000, flexitok/reindexed-flexitok-bpe_por_Latn_8000, flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000, flexitok/reindexed-flexitok-bpe_spa_Latn_8000, flexitok/reindexed-flexitok-bpe_swe_Latn_8000, flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2, flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+## Training superset tokenizer with individual tokenizers trained on Fineweb-2-hq
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+##TODO: add router details, make sure name is correct
+# python -m lingua.stool script=apps.main.train config=[/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/safe_v2_oracle.yaml]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=[apps/main/configs/flexitok/llama_1b_base.yaml,apps/main/configs/ablations/safe_v2_oracle.yaml]
+
+model:
+  vocab_size: 122554
+  # dim: 128
+name: safe_v2
+dump_dir: /fsx/craffel/lingua_logs/safe_v2
+data:
+  tokenizer:
+    name: supertokenizer
+    seed: 42
+    superset_code_name: safe_v2
+    n_words: 122554
+    tokenizers:
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ces_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000_v2
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_dan_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ell_Grek_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_fas_Arab_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_hun_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v2
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_nld_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_pol_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_por_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_swe_Latn_8000
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      load_supermapping: false
+    - name: huggingface
+      path: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+      load_supermapping: false
+  routing:
+    suitable_tokenizer_probability: 1.0
+    source_to_tokenizer:
+      arb_Arab: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      ces_Latn: flexitok/reindexed-flexitok-bpe_ces_Latn_8000
+      cmn_Hani: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      dan_Latn: flexitok/reindexed-flexitok-bpe_dan_Latn_8000
+      deu_Latn: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      ell_Grek: flexitok/reindexed-flexitok-bpe_ell_Grek_8000
+      fas_Arab: flexitok/reindexed-flexitok-bpe_fas_Arab_8000
+      fra_Latn: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      fw_edu: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      hun_Latn: flexitok/reindexed-flexitok-bpe_hun_Latn_8000
+      ind_Latn: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      ita_Latn: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      jpn_Jpan: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v2
+      nld_Latn: flexitok/reindexed-flexitok-bpe_nld_Latn_8000
+      pol_Latn: flexitok/reindexed-flexitok-bpe_pol_Latn_8000
+      por_Latn: flexitok/reindexed-flexitok-bpe_por_Latn_8000
+      rus_Cyrl: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      spa_Latn: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      swe_Latn: flexitok/reindexed-flexitok-bpe_swe_Latn_8000
+      tur_Latn: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      vie_Latn: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/safe_v2
+  # eval:
+  #   every: 1
+  #   keep: -1
+  dump:
+    every: 2500
+    keep: -1
+  eval:
+    every: 2500
+    keep: -1
+# async_eval_gpus: 1
+eval:
+  routing:
+    suitable_tokenizer_probability: 1.0
+    task_to_tokenizer:
+      arc_easy: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      arc_challenge: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      hellaswag: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      piqa: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      include_base_44_arabic: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      include_base_44_chinese: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      include_base_44_german: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      include_base_44_greek: flexitok/reindexed-flexitok-bpe_ell_Grek_8000
+      include_base_44_persian: flexitok/reindexed-flexitok-bpe_fas_Arab_8000
+      include_base_44_french: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      include_base_44_hungarian: flexitok/reindexed-flexitok-bpe_hun_Latn_8000
+      include_base_44_indonesian: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      include_base_44_italian: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      include_base_44_japanese: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v2
+      include_base_44_dutch: flexitok/reindexed-flexitok-bpe_nld_Latn_8000
+      include_base_44_polish: flexitok/reindexed-flexitok-bpe_pol_Latn_8000
+      include_base_44_portuguese: flexitok/reindexed-flexitok-bpe_por_Latn_8000
+      include_base_44_russian: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      include_base_44_spanish: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      include_base_44_turkish: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      include_base_44_vietnamese: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+      belebele_arb_Arab: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      belebele_ces_Latn: flexitok/reindexed-flexitok-bpe_ces_Latn_8000
+      belebele_zho_Hans: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      belebele_dan_Latn: flexitok/reindexed-flexitok-bpe_dan_Latn_8000
+      belebele_deu_Latn: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      belebele_ell_Grek: flexitok/reindexed-flexitok-bpe_ell_Grek_8000
+      belebele_pes_Arab: flexitok/reindexed-flexitok-bpe_fas_Arab_8000
+      belebele_fra_Latn: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      belebele_hun_Latn: flexitok/reindexed-flexitok-bpe_hun_Latn_8000
+      belebele_ind_Latn: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      belebele_ita_Latn: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      belebele_jpn_Jpan: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v2
+      belebele_nld_Latn: flexitok/reindexed-flexitok-bpe_nld_Latn_8000
+      belebele_pol_Latn: flexitok/reindexed-flexitok-bpe_pol_Latn_8000
+      belebele_por_Latn: flexitok/reindexed-flexitok-bpe_por_Latn_8000
+      belebele_rus_Cyrl: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      belebele_spa_Latn: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      belebele_swe_Latn: flexitok/reindexed-flexitok-bpe_swe_Latn_8000
+      belebele_tur_Latn: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      belebele_vie_Latn: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+      belebele_eng_Latn: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      xnli_ar: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      xnli_zh: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      xnli_de: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      xnli_el: flexitok/reindexed-flexitok-bpe_ell_Grek_8000
+      xnli_en: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      xnli_es: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      xnli_fr: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      xnli_ru: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      xnli_tr: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      xnli_vi: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+      regex:toksuite_turkish*: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      regex:toksuite_english*: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      regex:toksuite_farsi*: flexitok/reindexed-flexitok-bpe_fas_Arab_8000
+      regex:toksuite_italian*: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      regex:toksuite_chinese*: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      regex:toksuite_math*: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      regex:toksuite_stem*: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      flores200_arb_Arab: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      flores200_ces_Latn: flexitok/reindexed-flexitok-bpe_ces_Latn_8000
+      flores200_cmn_Hani: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      flores200_dan_Latn: flexitok/reindexed-flexitok-bpe_dan_Latn_8000
+      flores200_deu_Latn: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      flores200_ell_Grek: flexitok/reindexed-flexitok-bpe_ell_Grek_8000
+      flores200_fas_Arab: flexitok/reindexed-flexitok-bpe_fas_Arab_8000
+      flores200_fra_Latn: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      flores200_fw_edu: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      flores200_eng_Latn: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      flores200_hun_Latn: flexitok/reindexed-flexitok-bpe_hun_Latn_8000
+      flores200_ind_Latn: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      flores200_ita_Latn: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      flores200_jpn_Jpan: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v2
+      flores200_nld_Latn: flexitok/reindexed-flexitok-bpe_nld_Latn_8000
+      flores200_pol_Latn: flexitok/reindexed-flexitok-bpe_pol_Latn_8000
+      flores200_por_Latn: flexitok/reindexed-flexitok-bpe_por_Latn_8000
+      flores200_rus_Cyrl: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      flores200_spa_Latn: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      flores200_swe_Latn: flexitok/reindexed-flexitok-bpe_swe_Latn_8000
+      flores200_tur_Latn: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      flores200_vie_Latn: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+      xcopa_id: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      xcopa_it: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      xcopa_tr: flexitok/reindexed-flexitok-bpe_ltr_tur_Latn_8000_v2
+      xcopa_vi: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+      xcopa_zh: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      xstorycloze_ar: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      xstorycloze_en: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      xstorycloze_es: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      xstorycloze_id: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      xstorycloze_ru: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      xstorycloze_zh: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      paws_de: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      paws_en: flexitok/reindexed-flexitok-bpe_fw_edu_8000
+      paws_es: flexitok/reindexed-flexitok-bpe_spa_Latn_8000
+      paws_fr: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      paws_ja: flexitok/reindexed-flexitok-bpe_ltr_jpn_Jpan_8000_v2
+      paws_zh: flexitok/reindexed-flexitok-bpe_ltr_cmn_Hani_8000
+      hellaswag_ar: flexitok/reindexed-flexitok-bpe_arb_Arab_8000
+      hellaswag_da: flexitok/reindexed-flexitok-bpe_dan_Latn_8000
+      hellaswag_de: flexitok/reindexed-flexitok-bpe_deu_Latn_8000
+      hellaswag_fr: flexitok/reindexed-flexitok-bpe_fra_Latn_8000
+      hellaswag_hu: flexitok/reindexed-flexitok-bpe_hun_Latn_8000
+      hellaswag_id: flexitok/reindexed-flexitok-bpe_ind_Latn_8000
+      hellaswag_it: flexitok/reindexed-flexitok-bpe_ita_Latn_8000
+      hellaswag_nl: flexitok/reindexed-flexitok-bpe_nld_Latn_8000
+      hellaswag_pt: flexitok/reindexed-flexitok-bpe_por_Latn_8000
+      hellaswag_ru: flexitok/reindexed-flexitok-bpe_rus_Cyrl_8000
+      hellaswag_sv: flexitok/reindexed-flexitok-bpe_swe_Latn_8000
+      hellaswag_vi: flexitok/reindexed-flexitok-bpe_vie_Latn_8000
+      hellaswag_es: flexitok/reindexed-flexitok-bpe_spa_Latn_8000

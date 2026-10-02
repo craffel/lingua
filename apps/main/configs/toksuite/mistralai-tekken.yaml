@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/mistralai-tekken/checkpoints
+data:
+  tokenizer:
+    name: tekken
+    path: mistralai/tekken
+dump_dir: /fsx/craffel/toksuite/lingua_logs/mistralai-tekken/
+name: toksuite_mistralai-tekken

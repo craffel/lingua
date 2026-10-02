@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/google-gemma-2-2b/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: google/gemma-2-2b
+dump_dir: /fsx/craffel/toksuite/lingua_logs/google-gemma-2-2b/
+name: toksuite_google-gemma-2-2b

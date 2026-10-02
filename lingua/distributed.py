@@ -2,7 +2,6 @@
 
 import atexit
 import contextlib
-from itertools import chain
 import logging
 import multiprocessing as mp
 import os
@@ -15,25 +14,26 @@ import sys
 import tempfile
 from dataclasses import asdict, dataclass
 from functools import lru_cache, partial, reduce
+from itertools import chain
 from typing import List, Optional, Tuple, Union
 
 import torch
-from torch.distributed import ReduceOp
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch import distributed as dist
-from torch.distributed._tensor import DTensor
-from torch.distributed._composable.fsdp import MixedPrecisionPolicy, fully_shard
-from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
-    checkpoint_wrapper,
-)
-from torch.utils.checkpoint import (
-    create_selective_checkpoint_contexts,
-    CheckpointPolicy,
-)
-from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
 
 # for no recompute ops
 import xformers.ops
+from torch import distributed as dist
+from torch.distributed import ReduceOp
+from torch.distributed._composable.fsdp import MixedPrecisionPolicy, fully_shard
+from torch.distributed._tensor import DTensor
+from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
+    checkpoint_wrapper,
+)
+from torch.distributed.device_mesh import DeviceMesh, init_device_mesh
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.checkpoint import (
+    CheckpointPolicy,
+    create_selective_checkpoint_contexts,
+)
 
 from lingua.float8 import convert_linears_to_fp8
 
@@ -47,9 +47,12 @@ default_no_recompute_ops = {
     torch.ops.aten._scaled_dot_product_flash_attention.default,
     torch.ops.c10d_functional.reduce_scatter_tensor.default,
     torch.ops.xformers_flash.flash_fwd.default,
-    torch.ops.xformers.efficient_attention_forward_cutlass.default,
 }
 
+
+with contextlib.suppress(AttributeError):  # ignore exception if op is missing (old xFormers)
+    default_no_recompute_ops.add(torch.ops.xformers.efficient_attention_forward_cutlass.default)
+    default_no_recompute_ops.add(torch.ops.xformers_flash3.flash_fwd.default)
 
 @dataclass
 class DistributedArgs:
@@ -74,6 +77,7 @@ class DistributedArgs:
     compile_cache_size_limit: int = 8
 
     spawn_method: str = "forkserver"
+    reduce_dtype: str = "fp32"  # reduce dtype for FSDP mixed precision policy choose between fp32, fp16, bf16
 
 
 @dataclass
@@ -252,6 +256,7 @@ def setup_torch_distributed(dist_args):
     os.environ["MASTER_PORT"] = str(
         get_master_port(job_id=int(os.environ.get("SLURM_JOB_ID", -1)))
     )
+    logger.info(f"Running on master addr: {os.environ['MASTER_ADDR']}:{os.environ['MASTER_PORT']}")
 
     if get_is_torch_run():
         logger.info(f"Run launched with torchrun, local rank: {local_rank}")
@@ -272,9 +277,13 @@ def setup_torch_distributed(dist_args):
     torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = (
         dist_args.allow_bf16_reduced_precision_reduction
     )
-    if torch.cuda.device_count() > 1:
-        torch.cuda.set_device(local_rank)
-    torch.distributed.init_process_group(init_method="env://", backend="nccl")
+    if torch.cuda.is_available():
+        if torch.cuda.device_count() > 1:
+            torch.cuda.set_device(local_rank)
+        backend = "nccl"
+    else:
+        backend = "gloo"
+    torch.distributed.init_process_group(init_method="env://", backend=backend)
     torch.autograd.set_detect_anomaly(dist_args.detect_anomaly)
 
 
@@ -422,12 +431,15 @@ def parallelize_model(
             assert (
                 device_mesh["dp_shard"].size() == 1
             ), "dp_shard must be 1 for no_shard fsdp_type"
-
+        reduce_dtype = dict(
+            fp32=torch.float32, fp16=torch.float16, bf16=torch.bfloat16
+        )[distributed_args.reduce_dtype]
         fsdp_config = dict(
             mp_policy=(
                 MixedPrecisionPolicy(
                     param_dtype=param_dtype,
-                    reduce_dtype=torch.float32,
+                    reduce_dtype=reduce_dtype,
+                    # reduce_dtype=torch.float32,
                 )
             ),
             mesh=(

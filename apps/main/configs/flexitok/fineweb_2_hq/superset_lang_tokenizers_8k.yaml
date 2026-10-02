@@ -1,0 +1,83 @@
+# # Training superset tokenizer with individual tokenizers trained on Fineweb-2-hq
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","/fsx/craffel/lingua/apps/main/configs/flexitok/fineweb_2_hq/superset_lang_tokenizers_8k.yaml"] 
+#  python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/flexitok/fineweb_2_hq/superset_lang_tokenizers_8k.yaml"] 
+
+dump_dir: /fsx/craffel/lingua_logs/fineweb2_hq_superset_lang_tokenizers
+name: flexitok_superset_lang_tokenizers
+
+
+model:
+  vocab_size: 113764
+
+data:
+  tokenizer:
+    name: supertokenizer
+    seed: 42
+    superset_code_name: fineweb2_hq
+    n_words: 113764
+    
+    tokenizers:
+      - name: huggingface
+        path: flexitok/bpe_arb_Arab_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ces_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_cmn_Hani_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_dan_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_deu_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ell_Grek_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_fas_Arab_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_fra_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_fw_edu_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_hun_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ind_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_ita_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_jpn_Jpan_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_nld_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_pol_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_por_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_rus_Cyrl_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_spa_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_swe_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_tur_Latn_8000
+        load_supermapping: True
+      - name: huggingface
+        path: flexitok/bpe_vie_Latn_8000
+        load_supermapping: True

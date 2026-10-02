@@ -1,0 +1,41 @@
+# # Training superset tokenizer with individual tokenizers trained on Fineweb-2-hq
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","/fsx/craffel/lingua/apps/main/configs/flexitok/fineweb_2_hq/superset_lang_tokenizers_8k.yaml","apps/main/configs/flexitok/fineweb_2_hq/oracle_routing.yaml"] 
+#  python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/flexitok/fineweb_2_hq/superset_lang_tokenizers_8k.yaml","apps/main/configs/flexitok/fineweb_2_hq/oracle_routing.yaml"] 
+
+dump_dir: /fsx/craffel/lingua_logs/fineweb2_hq_superset_oracle
+name: flexitok_superset_fineweb2_hq_oracle
+
+
+model:
+  vocab_size: 113764
+# grad_acc_steps: 32
+
+data:
+  # batch_size: 1
+  routing:
+    # suitable_tokenizer_key: suitable_tokenizer
+    suitable_tokenizer_probability: 1.0
+    source_to_tokenizer:
+      arb_Arab: flexitok/bpe_arb_Arab_8000
+      ces_Latn: flexitok/bpe_ces_Latn_8000
+      cmn_Hani: flexitok/bpe_cmn_Hani_8000
+      dan_Latn: flexitok/bpe_dan_Latn_8000
+      deu_Latn: flexitok/bpe_deu_Latn_8000
+      ell_Grek: flexitok/bpe_ell_Grek_8000
+      fas_Arab: flexitok/bpe_fas_Arab_8000
+      fra_Latn: flexitok/bpe_fra_Latn_8000
+      fw_edu: flexitok/bpe_fw_edu_8000
+      hun_Latn: flexitok/bpe_hun_Latn_8000
+      ind_Latn: flexitok/bpe_ind_Latn_8000
+      ita_Latn: flexitok/bpe_ita_Latn_8000
+      jpn_Jpan: flexitok/bpe_jpn_Jpan_8000
+      nld_Latn: flexitok/bpe_nld_Latn_8000
+      pol_Latn: flexitok/bpe_pol_Latn_8000
+      por_Latn: flexitok/bpe_por_Latn_8000
+      rus_Cyrl: flexitok/bpe_rus_Cyrl_8000
+      spa_Latn: flexitok/bpe_spa_Latn_8000
+      swe_Latn: flexitok/bpe_swe_Latn_8000
+      tur_Latn: flexitok/bpe_tur_Latn_8000
+      vie_Latn: flexitok/bpe_vie_Latn_8000
+

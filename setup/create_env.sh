@@ -4,7 +4,7 @@
 #SBATCH --job-name=env_creation
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --gres=gpu:8
+#SBATCH --gres=gpu:1
 #SBATCH --exclusive
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=128
@@ -14,27 +14,20 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+module load cuda/12.2
+
 # Start timer
 start_time=$(date +%s)
 
 # Get the current date
 current_date=$(date +%y%m%d)
 
-# Create environment name with the current date
-env_prefix=lingua_$current_date
-
-# Create the conda environment
-
-source $CONDA_ROOT/etc/profile.d/conda.sh
-conda create -n $env_prefix python=3.11 -y -c anaconda
-conda activate $env_prefix
-
-echo "Currently in env $(which python)"
-
-# Install packages
-pip install torch==2.5.0 xformers --index-url https://download.pytorch.org/whl/cu121
-pip install ninja
-pip install --requirement requirements.txt
+uv venv --python=3.10
+source .venv/bin/activate
+uv pip install torch==2.5.0 xformers --index-url https://download.pytorch.org/whl/cu121
+uv pip install ninja
+# uv sync
+uv pip install -e .
 
 # End timer
 end_time=$(date +%s)
@@ -46,5 +39,3 @@ elapsed_time=$((end_time - start_time))
 elapsed_minutes=$((elapsed_time / 60))
 
 echo "Environment $env_prefix created and all packages installed successfully in $elapsed_minutes minutes!"
-
-

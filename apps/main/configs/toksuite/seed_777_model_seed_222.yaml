@@ -1,0 +1,25 @@
+# python -m lingua.stool script=apps.main.train config=["apps/main/configs/toksuite/toksuite_llama_1B.yaml","apps/main/configs/toksuite/seed_777_model_seed_222.yaml"]
+# python -m lingua.stool_ccdb script=apps.main.train time=240 launcher=bash mem=64G nodes=1 ngpu=1 ncpu=2 config=["apps/main/configs/toksuite/toksuite_llama_1B.yaml","apps/main/configs/toksuite/seed_777_model_seed_222.yaml"]
+
+
+name: toksuite_llama_1b_seed_777_model_seed_222
+dump_dir: /fsx/craffel/toksuite/lingua_logs/meta-llama-Llama-3.2-1B-seed_777_model_seed_222/
+seed: 777
+
+data:
+  seed: 42
+
+model:
+  seed: 222
+  
+checkpoint:
+  dump:
+    every: 6000
+    keep: -1
+  eval:
+    every: 2000
+    keep: -1
+  path: /fsx/craffel/toksuite/lingua_logs/meta-llama-Llama-3.2-1B-seed_777_model_seed_222/checkpoints
+  init_ckpt_path: 
+  load_init_optimizer_state: false
+  save_init_ckpt: false

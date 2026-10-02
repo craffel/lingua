@@ -1,0 +1,58 @@
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=sbatch script=apps.main.eval config=["apps/main/configs/modular_arithmetic/eval_mod-superset.yaml"]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=bash script=apps.main.eval config=["apps/main/configs/modular_arithmetic/eval_mod-superset.yaml"]
+# 
+name: "flexitok_modular_arithmetic"
+dump_dir: /scratch/gsa/train/flexitok_superset_mod_tokenizers//
+ckpt_dir: /scratch/gsa/train/flexitok_superset_mod_tokenizers/checkpoints/0000005000/
+
+
+harness:
+  log_samples: true
+  tasks:
+    - modular_arithmetic
+
+generator:
+  max_tokens: 256
+  max_gen_len: 8
+  dtype: bf16
+  add_bos: True
+
+wandb:
+  project: moto-modular-arithmetic-evals
+  name: superset
+
+tokenizer:
+  name: supertokenizer
+  seed: 42
+  superset_code_name: mod_tokenizers
+  n_words: 100007
+
+  tokenizers:
+    - name: huggingface
+      path: flexitok/mod-tokenizers-individual
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-ltr_3digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-ltr_2digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-ltr_4digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-ltr_5digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-rtl_2digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-rtl_3digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-rtl_4digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-rtl_5digit
+      load_supermapping: True
+

@@ -1,23 +1,32 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import contextlib
-from copy import deepcopy
-from functools import partial
 import json
-from dataclasses import dataclass, field
-from multiprocessing import Process, Queue, Event
-from queue import Full, Empty
-from multiprocessing.synchronize import Event as EventClass
-import os
-from pathlib import Path
-from queue import Full
-from typing import Dict, Any, Iterator, Optional, TypedDict
-from lingua.tokenizer import build_tokenizer, TokenizerArgs
-import numpy as np
 import logging
+import os
+from copy import deepcopy
+from dataclasses import dataclass, field
+from functools import partial
+from math import dist
+from multiprocessing import Event, Process, Queue
+from multiprocessing.synchronize import Event as EventClass
+from pathlib import Path
+from queue import Empty, Full
+from typing import Any, Dict, Iterator, Optional, TypedDict
 
+import numpy as np
+import torch
+
+from lingua.tokenizer import TokenizerArgs, build_tokenizer
+
+dump_docs=os.environ.get("DUMP_DOCS","False")=="True"
+print_docs=os.environ.get("PRINT_DOCS","False")=="True"
+dump_dir=os.environ.get("DUMP_DIR","/scratch/gsa/data_recreation-dump/")
 logger = logging.getLogger()
 
+dump_docs=os.environ.get("DUMP_DOCS","False")=="True"
+print_docs=os.environ.get("PRINT_DOCS","False")=="True"
+dump_dir=os.environ.get("DUMP_DIR","/scratch/gsa/data_recreation-dump/")
 """
 This file contains all code necessary for text data loading from preshuffled jsonl chunks.
 For example if given the following files with a world size of 8 
@@ -102,6 +111,13 @@ class TokenizerState(TypedDict):
     add_bos: bool
     add_eos: bool
     path: Optional[str]
+    tokenizers: Optional[Dict[str, str]]
+    dropout: Optional[float]
+    rng_state: Dict[str, Any]       # for supertokenizer
+    seed: Optional[int]
+    superset_code_name: Optional[str]
+    n_words: Optional[int]
+    routing: Optional[Dict[str, Any]]   # serialized OracleRoutingArgs
 
 
 class PackTokensState(TypedDict):
@@ -206,12 +222,78 @@ def loop_on_jsonl(
         it.close()
 
 
+def _resolve_tokenizer_key(
+    tokenizer_name: Optional[str],
+    tokenizer,
+) -> Optional[str]:
+    """Fuzzy-match a tokenizer name against the superset tokenizer's keys."""
+    if tokenizer_name is None:
+        return None
+    candidate = str(tokenizer_name).strip()
+    if candidate == "":
+        return None
+    if not hasattr(tokenizer, "tokenizers") or not isinstance(tokenizer.tokenizers, dict):
+        return candidate
+    if candidate in tokenizer.tokenizers:
+        return candidate
+    lowered = candidate.lower()
+    for key in tokenizer.tokenizers:
+        if key.lower() == lowered:
+            return key
+    for key in tokenizer.tokenizers:
+        lowered_key = key.lower()
+        if lowered_key.endswith(f"/{lowered}") or lowered.endswith(f"/{lowered_key}"):
+            return key
+    return candidate
+
+
+def _sample_source_tokenizer_choice(
+    source: Optional[str],
+    tokenizer,
+    source_to_tokenizer: Dict[str, str],
+    suitable_tokenizer_probability: float,
+) -> Optional[int]:
+    """Return a tokenizer index for a given source, using oracle routing when configured."""
+    if not hasattr(tokenizer, "sample_tokenizer"):
+        return None
+    raw_key = source_to_tokenizer.get(source) if source is not None else None
+    if raw_key is None:
+        import re
+        ## apply pattern-based matching if direct source match is not found
+        for pattern, pattern_key in source_to_tokenizer.items():
+            if pattern.startswith("regex:"):
+                regex_pattern = pattern[len("regex:") :]
+                if re.match(regex_pattern, source or ""):
+                    raw_key = pattern_key
+                    break
+    preferred_tokenizer = _resolve_tokenizer_key(raw_key, tokenizer)
+    try:
+        if preferred_tokenizer is None or preferred_tokenizer == "random":
+            sampled_choice, _ = tokenizer.sample_tokenizer()
+        else:
+            sampled_choice, _ = tokenizer.sample_tokenizer(
+                preferred_tokenizer=preferred_tokenizer,
+                preferred_probability=suitable_tokenizer_probability,
+            )
+        return int(sampled_choice)
+    except Exception:
+        sampled_choice, _ = tokenizer.sample_tokenizer()
+        return int(sampled_choice)
+
+
 def tokenize(
     iterator: Iterator,
     add_bos: bool,
     add_eos: bool,
     tokenizer_type: str,
     tokenizer_path: Optional[str] = None,
+    tokenizers: Optional[Dict[str, str]] = None,
+    dropout: float = 0.0,
+    rng_state: Optional[Dict[str, Any]] = None,
+    seed: Optional[int] = 42,
+    superset_code_name: Optional[str] = None,
+    n_words: Optional[int] = None,
+    routing: Optional[Dict[str, Any]] = None,
 ):
     """
     Tokenizes text from an iterator of content-state pairs using a specified tokenizer.
@@ -221,24 +303,48 @@ def tokenize(
     - tokenizer: Tokenizer object with an `encode` method to convert text to tokens, supporting `add_bos` and `add_eos`.
     - add_bos (bool): Flag to add a beginning-of-sequence token.
     - add_eos (bool): Flag to add an end-of-sequence token.
+    - routing: Optional dict with oracle routing config (source_to_tokenizer,
+      suitable_tokenizer_probability).
 
     Yields:
     - (tokens, state) pairs, where `tokens` is a list of tokenized text, and `state` is the original state from the iterator.
     """
-    tokenizer = build_tokenizer(name=tokenizer_type, path=tokenizer_path)
+    if rng_state is None:
+        rng_state = np.random.default_rng(seed).bit_generator.state
+    tokenizer = build_tokenizer(name=tokenizer_type, path=tokenizer_path, tokenizers=tokenizers, dropout=dropout, rng_state=rng_state, superset_code_name=superset_code_name, n_words=n_words)
     for content, state in iterator:
         assert (
             "text" in content or "content" in content
         ), "JSON line must contain either text or content key"
         content_key = "text" if ("text" in content) else "content"
         text = content[content_key]
-        tokens = tokenizer.encode(text, add_bos=add_bos, add_eos=add_eos)
+        encode_kwargs: Dict[str, Any] = {}
+        if routing is not None and routing.get("suitable_tokenizer_probability", 0.0) > 0.0:
+            tokenizer_choice = _sample_source_tokenizer_choice(
+                source=content.get("_source"),
+                tokenizer=tokenizer,
+                source_to_tokenizer=routing.get("source_to_tokenizer", {}),
+                suitable_tokenizer_probability=routing["suitable_tokenizer_probability"],
+            )
+            if tokenizer_choice is not None:
+                encode_kwargs["tokenizer_choice"] = tokenizer_choice
+        tokens = tokenizer.encode(text, add_bos=add_bos, add_eos=add_eos, **encode_kwargs)
+        rng_state = None
+        if hasattr(tokenizer, "rng"):
+            rng_state = tokenizer.rng.bit_generator.state
         yield tokens, TokenizerState(
             it_state=state,
             add_bos=add_bos,
             add_eos=add_eos,
             name=tokenizer_type,
             path=tokenizer_path,
+            tokenizers=tokenizers,
+            dropout=dropout,
+            rng_state=rng_state,
+            seed=seed,
+            superset_code_name=superset_code_name,
+            n_words=n_words,
+            routing=routing,
         )
 
 
@@ -285,7 +391,17 @@ def choose_source(
             source_to_state=source_to_state,
             rng_state=rng.bit_generator.state,
         )
-        yield seq, multi_choice_state
+
+        if print_docs:
+            global_rank = int(os.environ.get("RANK", 0))
+            print(f"Rank {global_rank} - Chosen Source: {source_choice} | Source State: {state}")
+        if dump_docs:
+            dump_path = Path(dump_dir)/f"rank_{global_rank}.jsonl"
+            dump_path.parent.mkdir(parents=True,exist_ok=True)
+            with open(dump_path,"a") as f_dump:
+                json.dump({"text":seq["text"], "source": source_choice, "position": state.get("position", None)},f_dump)
+                f_dump.write("\n")
+        yield {**seq, "_source": source_choice}, multi_choice_state
 
 
 def get_empty_buffer_state(
@@ -351,6 +467,8 @@ def pack_tokens(
         end_token = start_token
         sample_is_read = False
         while not sample_is_read:
+            # TODO: this is problematic with the supertokenizer approach
+            # print(start_token, end_token, len(tokens), len(buffer), buffer_size)
             assert start_token < len(
                 tokens
             ), f"Start token index {start_token} bigger than sequence {len(tokens)}"
@@ -550,17 +668,33 @@ def init_state(
     add_eos: bool,
     tokenizer_name: str,
     tokenizer_path: Optional[str] = None,
-    file_pattern: str = TRAIN_DATA_FILE_PATTERN
+    file_pattern: str = TRAIN_DATA_FILE_PATTERN,
+    tokenizers: Optional[Dict[str, str]] = None,
+    dropout: float = 0.0,
+    superset_code_name: Optional[str] = None,
+    n_words: Optional[int] = None,
+    routing: Optional["OracleRoutingArgs"] = None,
 ):
     multi_choice_state = init_choice_state(
         root_dir=root_dir, sources=sources, seed=seed, rank=rank, world_size=world_size, file_pattern=file_pattern
     )
+    routing_dict: Optional[Dict[str, Any]] = None
+    if routing is not None:
+        routing_dict = {
+            "source_to_tokenizer": routing.source_to_tokenizer,
+            "suitable_tokenizer_probability": routing.suitable_tokenizer_probability,
+        }
     tokenizer_state = TokenizerState(
         it_state=multi_choice_state,
         add_bos=add_bos,
         add_eos=add_eos,
         name=tokenizer_name,
         path=tokenizer_path,
+        tokenizers=tokenizers,
+        dropout=dropout,
+        superset_code_name=superset_code_name,
+        n_words=n_words,
+        routing=routing_dict,
     )
     pack_state = PackTokensState(
         start_token=0,
@@ -620,6 +754,13 @@ def build_dataloader(
         tokenizer_state["add_eos"],
         tokenizer_state["name"],
         tokenizer_state["path"],
+        tokenizer_state["tokenizers"],
+        tokenizer_state.get("dropout", 0),
+        tokenizer_state.get("rng_state", None),
+        tokenizer_state.get("seed", 42),
+        superset_code_name=tokenizer_state.get("superset_code_name", None),
+        n_words=tokenizer_state.get("n_words", None),
+        routing=tokenizer_state.get("routing", None),
     )
 
     data_it = pack_tokens(
@@ -627,6 +768,7 @@ def build_dataloader(
         pack_state,
     )
 
+    ## todo: later change this to have the tokenizer info
     data_it = batch_and_shuffle_prefetched_sequences(
         data_loader=data_it,
         seq_len=pack_state["output_seq_len"],
@@ -708,6 +850,13 @@ def async_iterator(buffer_size: int, iterator_builder):
 
 
 @dataclass
+class OracleRoutingArgs:
+    source_to_tokenizer: Dict[str, str] = field(default_factory=dict)
+    task_to_tokenizer: Dict[str, str] = field(default_factory=dict)
+    suitable_tokenizer_probability: float = 1.0
+
+
+@dataclass
 class DataArgs:
     root_dir: Optional[str] = None
     sources: Dict[str, float] = field(default_factory=dict)
@@ -720,6 +869,7 @@ class DataArgs:
     load_async: bool = True
     prefetch_size: int = 64
     tokenizer: TokenizerArgs = field(default_factory=TokenizerArgs)
+    routing: OracleRoutingArgs = field(default_factory=OracleRoutingArgs)
 
 
 def init_dataloader_state_from_args(
@@ -741,6 +891,11 @@ def init_dataloader_state_from_args(
         tokenizer_path=args.tokenizer.path,
         add_bos=args.add_bos,
         add_eos=args.add_eos,
+        tokenizers=args.tokenizer.tokenizers,
+        dropout=args.tokenizer.dropout,
+        superset_code_name=args.tokenizer.superset_code_name,
+        n_words=args.tokenizer.n_words,
+        routing=args.routing,
     )
 
 

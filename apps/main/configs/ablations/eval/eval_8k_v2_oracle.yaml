@@ -1,0 +1,90 @@
+# python -m lingua.stool_ccdb script=apps.main.eval config=["apps/main/configs/ablations/eval/eval_8k_v2_oracle.yaml"]
+
+
+name: "eval_8k_v2_oracle"
+dump_dir: /fsx/craffel/lingua_logs/8k_v2_oracle/eval/
+ckpt_dir: /fsx/craffel/lingua_logs/8k_v2_oracle/checkpoints/0000100000/
+
+
+harness:
+  log_samples: true
+  tasks:
+    # --- General Reasoning ---
+    - arc_easy
+    - arc_challenge
+    - hellaswag
+    - piqa
+
+    # --- MMLU / Base 44 ---
+    - include_base_44_arabic
+    # no czech, swedish, danish
+    - include_base_44_chinese
+    - include_base_44_german
+    - include_base_44_greek
+    - include_base_44_persian
+    - include_base_44_french
+    - include_base_44_hungarian
+    - include_base_44_indonesian
+    - include_base_44_italian
+    - include_base_44_japanese
+    - include_base_44_dutch
+    - include_base_44_polish
+    - include_base_44_portuguese
+    - include_base_44_russian
+    - include_base_44_spanish
+    - include_base_44_turkish
+    - include_base_44_vietnamese
+
+    # --- Belebele ---
+    - belebele_arb_Arab
+    - belebele_ces_Latn
+    - belebele_zho_Hans
+    - belebele_dan_Latn
+    - belebele_deu_Latn
+    - belebele_ell_Grek
+    - belebele_pes_Arab
+    - belebele_fra_Latn
+    - belebele_hun_Latn
+    - belebele_ind_Latn
+    - belebele_ita_Latn
+    - belebele_jpn_Jpan
+    - belebele_nld_Latn
+    - belebele_pol_Latn
+    - belebele_por_Latn
+    - belebele_rus_Cyrl
+    - belebele_spa_Latn
+    - belebele_swe_Latn
+    - belebele_tur_Latn
+    - belebele_vie_Latn
+    - belebele_eng_Latn  
+
+    # --- XNLI ---
+    - xnli_ar
+    - xnli_zh
+    - xnli_de
+    - xnli_el
+    - xnli_en
+    - xnli_es
+    - xnli_fr
+    - xnli_ru
+    - xnli_tr
+    - xnli_vi
+
+    # --- TokSuite ---
+    - toksuite_turkish
+    - toksuite_english
+    - toksuite_farsi
+    - toksuite_italian
+    - toksuite_chinese
+    - toksuite_math
+    - toksuite_stem
+
+
+generator:
+  max_tokens: 16384
+  dtype: bf16
+  add_bos: False
+
+wandb:
+  project: FlexiTok
+  name: Superset 8k-v2-oracle

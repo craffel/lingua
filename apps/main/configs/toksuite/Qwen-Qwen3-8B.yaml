@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/Qwen-Qwen3-8B/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: Qwen/Qwen3-8B
+dump_dir: /fsx/craffel/toksuite/lingua_logs/Qwen-Qwen3-8B/
+name: toksuite_Qwen-Qwen3-8B

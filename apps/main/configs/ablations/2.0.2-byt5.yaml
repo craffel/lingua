@@ -1,0 +1,17 @@
+# Training Llama model with the Qwen tokenizer
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml",apps/main/configs/ablations/2.0.2-byt5.yaml] 
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml",apps/main/configs/ablations/2.0.2-byt5.yaml]
+
+dump_dir: /fsx/craffel/lingua_logs/flexitok_byt5
+name: flexitok_byt5
+
+data:
+  tokenizer:
+    name: huggingface
+    path: google/byt5-small
+
+
+checkpoint:
+  init_ckpt_path:
+  path: /fsx/craffel/lingua_logs/checkpoints/flexitok_byt5/

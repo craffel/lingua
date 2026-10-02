@@ -1,0 +1,22 @@
+# Training llama model for the 43% of the original model to match the superset tokenizer 
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","/fsx/craffel/lingua/apps/main/configs/ablations/2.11_parity_aware_bpe_tr_5k_val_100.yaml"] 
+#  python -m lingua.stool_ccdb ngpu=1 ncpu=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/ablations/2.11_parity_aware_bpe_tr_5k_val_100.yaml"] 
+dump_dir: /fsx/craffel/lingua_logs/parity_aware_bpe_tr_5k_val_100
+name: parity_aware_bpe_tr_5k_val_100
+
+
+data:
+  tokenizer:
+    name: huggingface
+    path: flexitok/parity_aware_bpe_tr_5k_val_100
+
+checkpoint:
+  init_ckpt_path: /fsx/craffel/lingua_logs/checkpoints/parity_aware_bpe_tr_5k_val_100/
+  path: /fsx/craffel/lingua_logs/checkpoints/parity_aware_bpe_tr_5k_val_100/
+  dump:
+    every: 10000
+    keep: -1
+  eval:
+    every: 10000
+    keep: -1

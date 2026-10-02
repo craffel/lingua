@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/tiktoken-gpt-4o/checkpoints
+data:
+  tokenizer:
+    name: tiktoken
+    path: tiktoken/gpt-4o
+dump_dir: /fsx/craffel/toksuite/lingua_logs/tiktoken-gpt-4o/
+name: toksuite_tiktoken-gpt-4o

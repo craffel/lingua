@@ -1,0 +1,112 @@
+# 1) download the dataset from flexitok/mod-arithmetic
+  #  hf download flexitok/mod-arithmetic  --local-dir=/scratch/gsa/data/modular_arithmetic/ --repo-type dataset 
+  #  hf download flexitok/mod-arithmetic  --local-dir=/scratch/craffel/lingua/data/modular_arithmetic  --repo-type dataset
+# 2) run
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=bash script=apps.main.train_answer_only config=["apps/main/configs/modular_arithmetic/base.yaml"]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=sbatch script=apps.main.train_answer_only config=["apps/main/configs/modular_arithmetic/base.yaml"]
+dump_dir: /fsx/craffel/lingua_logs/flexitok_modular_arithmetic-corrected/
+name: flexitok_modular_arithmetic2
+# steps: 100_000
+probe_freq: null
+seed: 777
+grad_acc_steps: 1   # small model alrady
+track_source_metrics: true
+
+steps: 5_000
+
+optim:
+  lr: 1e-3
+  weight_decay: 1.0    
+  epsilon: 1.0e-08
+  scheduler: cosine
+  warmup: 100        
+  lr_min_ratio: 0.000001
+  clip: 1.0
+
+distributed:
+  fsdp_type: no_shard    # single GPU: no sharding needed; 2 GPU: change to full_shard
+  model_dtype: bf16
+  matmul_allow_tf32: true  # L40S supports tf32, free speedup
+  selective_activation_checkpointing: false
+  tp_size: 1
+  compile: true
+
+model:
+  dim: 256               
+  n_layers: 4            
+  n_heads: 4             
+  weight_tying: false
+
+data:
+  root_dir: /scratch/craffel/lingua/data/modular_arithmetic/data/
+  sources:
+    mod_10: 0.0769
+    mod_100: 0.0769
+    mod_1000: 0.0771
+    mod_125: 0.0770
+    mod_16: 0.0769
+    mod_2: 0.0770
+    mod_25: 0.0769
+    mod_3: 0.0769
+    mod_32: 0.0768
+    mod_4: 0.0770
+    mod_5: 0.0769
+    mod_7: 0.0770
+    mod_8: 0.0768
+    # mod_power_of_10: .2315
+    # mod_power_of_2: .3847
+    # mod_power_of_5: .2303
+    # mod_prime: .1534
+    # data: 1.
+    # mod_power_of_10: 
+    # mod_power_of_5: 
+    # mod_power_of_2: 
+    # mod_prime: 
+  batch_size: 512       
+  prefetch_size: 128
+  seq_len: 256            # "a + b = c" is 4–8 tokens even with digit tokenization
+  n_views: 2             # no contrastive objective
+  load_async: true
+  add_eos: true
+  tokenizer:
+    name: huggingface
+    path: flexitok/mod-tokenizers-individual
+
+# quick training no need for profiling
+profiling:
+  run: false
+
+checkpoint:
+  # init_ckpt_path: 
+  dump:
+    every: 1000
+    keep: 3
+  eval:
+    every: 1000
+    keep: 3
+
+logging:
+  freq: 1
+  wandb: 
+    project: moto-modular-arithmetic
+    entity: gsaltintas
+    tags: 
+      - pre-training
+      - modular-arithmetic
+    group: individual-digits
+    # group: llama-3.2
+    # name: Optional[str] = None
+    # notes: Optional[str] = None
+    # sync_tensorboard: true
+    # resume_from: Optional[str] = None
+
+# async_eval_gpus: 8
+# eval:
+#   harness:
+#     tasks:
+#       # --- TODO: later add this ---
+#       # - flexitok/mod-arithmetic
+#   generator:
+#     max_tokens: 16384
+#     dtype: bf16
+#     add_bos: False

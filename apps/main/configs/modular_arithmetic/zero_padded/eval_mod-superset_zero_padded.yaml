@@ -1,0 +1,59 @@
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=sbatch script=apps.main.eval config=["apps/main/configs/modular_arithmetic/zero_padded/eval_mod-superset_zero_padded.yaml"]
+# 
+name: "superset_mod_tokenizers_zero_padded"
+dump_dir: /fsx/craffel/lingua_logs/modular_arithmetic_zero_padded/superset_mod_tokenizers_zero_padded/
+ckpt_dir: /fsx/craffel/lingua_logs/modular_arithmetic_zero_padded/superset_mod_tokenizers_zero_padded/checkpoints/0000005000/
+# dump_dir: /fsx/craffel/lingua_logs/modular_arithmetic_zero_padded/superset_mod_tokenizers_zero_padded
+
+
+harness:
+  log_samples: false
+  tasks:
+    - modular_arithmetic
+
+generator:
+  max_tokens: 256
+  max_gen_len: 8
+  dtype: bf16
+  add_bos: True
+
+wandb:
+  project: moto-modular-arithmetic-evals
+  name: superset-zero-padded
+
+
+tokenizer:
+  name: supertokenizer
+  seed: 42
+  superset_code_name: mod_tokenizers_zero_padded
+  n_words: 110931
+
+  tokenizers:
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-individual
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-ltr_3digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-ltr_2digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-ltr_4digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-ltr_5digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-rtl_2digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-rtl_3digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-rtl_4digit
+      load_supermapping: True
+    - name: huggingface
+      path: flexitok/mod-tokenizers-zero-padded-rtl_5digit
+      load_supermapping: True
+

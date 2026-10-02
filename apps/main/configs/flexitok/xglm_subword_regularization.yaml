@@ -1,0 +1,13 @@
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+#  python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/flexitok/xglm_subword_regularization.yaml"]
+# also first download the tokenizer file
+# hf download facebook/xglm-564M  --include sentencepiece.bpe.model --local-dir=/fsx/craffel/lingua/tokenizers/
+# mv /fsx/craffel/lingua/tokenizers/sentencepiece.bpe.model /fsx/craffel/lingua/tokenizers/xglm-564M-sentencepiece.bpe.model
+dump_dir: /fsx/craffel/lingua_logs/flexitok_subword_regularization
+name: flexitok_subword_regularization
+
+data:
+  tokenizer:
+    name: sp
+    path: /fsx/craffel/lingua/tokenizers/xglm-564M-sentencepiece.bpe.model
+    dropout: 0.1

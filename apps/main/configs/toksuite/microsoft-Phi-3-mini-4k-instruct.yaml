@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/microsoft-Phi-3-mini-4k-instruct/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: microsoft/Phi-3-mini-4k-instruct
+dump_dir: /fsx/craffel/toksuite/lingua_logs/microsoft-Phi-3-mini-4k-instruct/
+name: toksuite_microsoft-Phi-3-mini-4k-instruct

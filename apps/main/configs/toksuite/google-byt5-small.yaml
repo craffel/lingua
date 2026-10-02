@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/google-byt5-small/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: google/byt5-small
+dump_dir: /fsx/craffel/toksuite/lingua_logs/google-byt5-small/
+name: toksuite_google-byt5-small

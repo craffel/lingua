@@ -1,0 +1,23 @@
+# python -m lingua.stool_ccdb ngpu=1 ncpu=4 mem=64G time=800 nodes=1 gpu_type=l40s launcher=sbatch script=apps.main.eval config=["apps/main/configs/modular_arithmetic/eval_base.yaml"]
+# 
+name: "flexitok_modular_arithmetic"
+dump_dir: /scratch/gsa/train/modular_arithmetic/
+ckpt_dir: /scratch/gsa/train/modular_arithmetic/
+
+
+harness:
+  log_samples: false
+  tasks:
+    - modular_arithmetic
+  # limit: 5
+
+generator:
+  max_tokens: 256
+  max_gen_len: 8
+  dtype: bf16
+  add_bos: True
+  until:
+    - </s>
+
+wandb:
+  project: moto-modular-arithmetic-evals

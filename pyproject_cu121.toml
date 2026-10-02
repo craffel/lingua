@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lingua"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "omegaconf",
+    "msgspec",
+    "rouge-score",
+    "sacrebleu",
+    "sentencepiece",
+    "tiktoken",
+    "fsspec",
+    "blobfile",
+    "wandb",
+    "viztracer",
+    "lm-eval",
+    "scipy",
+    "pynvml",
+    "datatrove",
+    "orjson",
+]
+
+[project.optional-dependencies]
+cuda = [
+    "torch==2.5.0",
+    "xformers",
+    "ninja",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["lingua", "apps"]
+
+[tool.uv]
+# Install torch with CUDA 12.1 support
+find-links = ["https://download.pytorch.org/whl/cu121"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu121" }
+xformers = { index = "pytorch-cu121" }
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true

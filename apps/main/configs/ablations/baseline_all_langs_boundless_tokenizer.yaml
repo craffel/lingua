@@ -1,0 +1,20 @@
+# # Training superset tokenizer with individual tokenizers trained on Fineweb-2-hq
+# use with apps/main/configs/flexitok/llama_1b_base.yaml
+# python -m lingua.stool script=apps.main.train config=["/fsx/craffel/lingua/apps/main/configs/flexitok/llama_1b_base.yaml","apps/main/configs/ablations/baseline_all_langs_boundless_tokenizer.yaml"]
+# python -m lingua.stool_ccdb ngpu=1 ncpu=1 nodes=1 launcher=bash script=apps.main.train config=["apps/main/configs/flexitok/llama_1b_base.yalml","apps/main/configs/ablations/baseline_all_langs_boundless_tokenizer.yaml"]
+
+dump_dir: /fsx/craffel/lingua_logs/all_langs_boundless_tokenizer 
+name: all_langs_boundless_tokenizer
+
+
+# model:
+#   vocab_size: 122447
+
+checkpoint:
+  path: /fsx/craffel/lingua_logs/checkpoints/all_langs_boundless_tokenizer/
+
+data:
+  tokenizer:
+    name: huggingface
+    path: flexitok/bpe_boundless_AllL_128000
+    

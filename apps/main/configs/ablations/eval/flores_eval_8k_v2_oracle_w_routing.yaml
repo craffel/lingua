@@ -1,0 +1,46 @@
+# python -m lingua.stool_ccdb gpu_type=l40s time=60 launcher=bash mem=64G nodes=1 ngpu=1 ncpu=2 script=apps.main.eval config=["apps/main/configs/ablations/eval/flores_eval_8k_v2_oracle_w_routing.yaml"]
+
+
+name: "eval_8k_v2_oracle"
+dump_dir: /fsx/craffel/lingua_logs/8k_v2_oracle/eval/flores/checkpoints/
+ckpt_dir: /fsx/craffel/lingua_logs/8k_v2_oracle/checkpoints/0000100000/
+
+harness:
+  log_samples: false
+  tasks:
+    - flores200
+
+routing:
+  suitable_tokenizer_probability: 1.0
+  task_to_tokenizer:
+    flores200_arb_Arab: flexitok/bpe_ltr_arb_Arab_8000_v2
+    flores200_ces_Latn: flexitok/bpe_ltr_ces_Latn_8000_v2
+    flores200_cmn_Hani: flexitok/bpe_ltr_cmn_Hani_8000_v2
+    flores200_dan_Latn: flexitok/bpe_ltr_dan_Latn_8000_v2
+    flores200_deu_Latn: flexitok/bpe_ltr_deu_Latn_8000_v2
+    flores200_ell_Grek: flexitok/bpe_ltr_ell_Grek_8000_v2
+    flores200_fas_Arab: flexitok/bpe_ltr_fas_Arab_8000_v2
+    flores200_fra_Latn: flexitok/bpe_ltr_fra_Latn_8000_v2
+    flores200_eng_Latn: flexitok/bpe_ltr_fw_edu_8000_v2
+    flores200_fw_edu: flexitok/bpe_ltr_fw_edu_8000_v2
+    flores200_hun_Latn: flexitok/bpe_ltr_hun_Latn_8000_v2
+    flores200_ind_Latn: flexitok/bpe_ltr_ind_Latn_8000_v2
+    flores200_ita_Latn: flexitok/bpe_ltr_ita_Latn_8000_v2
+    flores200_jpn_Jpan: flexitok/bpe_ltr_jpn_Jpan_8000_v2
+    flores200_nld_Latn: flexitok/bpe_ltr_nld_Latn_8000_v2
+    flores200_pol_Latn: flexitok/bpe_ltr_pol_Latn_8000_v2
+    flores200_por_Latn: flexitok/bpe_ltr_por_Latn_8000_v2
+    flores200_rus_Cyrl: flexitok/bpe_ltr_rus_Cyrl_8000_v2
+    flores200_spa_Latn: flexitok/bpe_ltr_spa_Latn_8000_v2
+    flores200_swe_Latn: flexitok/bpe_ltr_swe_Latn_8000_v2
+    flores200_tur_Latn: flexitok/bpe_ltr_tur_Latn_8000_v2
+    flores200_vie_Latn: flexitok/bpe_ltr_vie_Latn_8000_v2
+
+generator:
+  max_tokens: 16384
+  dtype: bf16
+  add_bos: False
+
+wandb:
+  project: FlexiTok
+  name: Superset 8k_v2_oracle Flores

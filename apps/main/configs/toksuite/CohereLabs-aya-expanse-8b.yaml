@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/CohereLabs-aya-expanse-8b/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: CohereLabs/aya-expanse-8b
+dump_dir: /fsx/craffel/toksuite/lingua_logs/CohereLabs-aya-expanse-8b/
+name: toksuite_CohereLabs-aya-expanse-8b

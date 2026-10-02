@@ -1,10 +1,14 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
-from copy import deepcopy
 import gc
 import logging
 import os
+from copy import deepcopy
+
+from lingua.transformer import cross_entropy
+
+TRACK_ACCURACY = os.environ.get("TRACK_ACCURACY", "False") == "True"
 import sys
 import time
 from contextlib import ExitStack
@@ -14,21 +18,35 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from omegaconf import OmegaConf
 import torch
 import torch.distributed
 import torch.nn.functional as F
+import wandb
 import xformers.profiler
-from torch.optim import lr_scheduler
-from torch.distributed.checkpoint.stateful import Stateful
+from omegaconf import OmegaConf
 from torch.distributed._tensor import DTensor
+from torch.distributed.checkpoint.stateful import Stateful
+from torch.optim import lr_scheduler
 
-from lingua.args import dataclass_from_dict, dump_config, flatten_dict
+from apps.main.transformer import (
+    LMTransformer,
+    LMTransformerArgs,
+    build_fsdp_grouping_plan,
+    get_no_recompute_ops,
+    get_num_flop_per_token,
+    tp_parallelize,
+)
+from lingua.args import (
+    dataclass_from_dict,
+    dataclass_from_dict_relaxed,
+    dump_config,
+    flatten_dict,
+)
 from lingua.checkpoint import (
     CheckpointArgs,
     CheckpointManager,
-    load_from_checkpoint,
     consolidate_checkpoints,
+    load_from_checkpoint,
 )
 from lingua.data import (
     DataArgs,
@@ -39,17 +57,17 @@ from lingua.data import (
 from lingua.distributed import (
     DistributedArgs,
     EnvironmentArgs,
-    init_signal_handler,
+    check_model_value_range,
+    clean_env,
     dist_mean_dict,
     get_device_mesh,
     get_is_master,
     get_world_size,
+    init_signal_handler,
     parallelize_model,
+    requeue_slurm_job,
     setup_env,
     setup_torch_distributed,
-    clean_env,
-    requeue_slurm_job,
-    check_model_value_range,
 )
 from lingua.logger import init_logger
 from lingua.metrics import (
@@ -59,20 +77,10 @@ from lingua.metrics import (
     get_num_params,
 )
 from lingua.optim import OptimArgs, build_optimizer
-from lingua.profiling import ProfilerArgs, maybe_run_profiler
-from lingua.tokenizer import build_tokenizer
-from apps.main.transformer import (
-    LMTransformerArgs,
-    LMTransformer,
-    get_num_flop_per_token,
-    build_fsdp_grouping_plan,
-    tp_parallelize,
-    get_no_recompute_ops,
-)
 from lingua.probe import AutoProbeD
+from lingua.profiling import ProfilerArgs, maybe_run_profiler
 from lingua.stool import StoolArgs, launch_job
-
-import wandb
+from lingua.tokenizer import build_tokenizer
 
 logger = logging.getLogger()
 
@@ -225,9 +233,7 @@ def every_n_steps(train_state, freq, acc_step=None, acc_freq=None):
 
 def train(args: TrainArgs):
     with ExitStack() as context_stack:
-        tokenizer = build_tokenizer(args.data.tokenizer.name, args.data.tokenizer.path)
-        if args.data.tokenizer.n_words is not None:
-            tokenizer.n_words = args.data.tokenizer.n_words
+        tokenizer = build_tokenizer(args.data.tokenizer.name, args.data.tokenizer.path, args.data.tokenizer.tokenizers, args.data.tokenizer.dropout, superset_code_name=args.data.tokenizer.superset_code_name, n_words=args.data.tokenizer.n_words)
         validate_train_args(
             args,
             tokenizer.n_words,
@@ -296,6 +302,7 @@ def train(args: TrainArgs):
         optimizer, scheduler = build_optimizer(model, args.optim, args.steps)
 
         if args.checkpoint.init_ckpt_path:
+            # todo: maybe auto load the largest ckpt
             logger.info(f"Loading initial model from {args.checkpoint.init_ckpt_path}")
             if args.checkpoint.load_init_optimizer_state:
                 load_from_checkpoint(args.checkpoint.init_ckpt_path, model, optimizer, model_key="model") # Put model_key="" if its directly the model checkpoint
@@ -303,6 +310,7 @@ def train(args: TrainArgs):
                 load_from_checkpoint(args.checkpoint.init_ckpt_path, model, model_key="model") # Put model_key="" if its directly the model checkpoint
             model.rope_embeddings.reset_parameters() # For RoPe initialization since it's a buffer it might not be loaded
         else:
+            logger.info(f"Model will be initialized from scratch with seed {args.model.seed}")
             with torch.random.fork_rng(devices=[torch.cuda.current_device()]):
                 torch.manual_seed(args.model.seed)
                 model.init_weights()
@@ -367,6 +375,7 @@ def train(args: TrainArgs):
         nwords_since_last_log = 0
         time_last_log = timer()
         gc.collect()
+        saved = False
         while train_state.step < args.steps:
             # We constrain train_state.acc_step to be in range 0 to args.grad_acc_steps - 1
             train_state.acc_step += 1
@@ -434,8 +443,12 @@ def train(args: TrainArgs):
                 assert (
                     next(model.parameters()).grad is None
                 ), "Probe model shouldn't have grads at this point"
-
-            loss = model(input_ids, labels)
+            if TRACK_ACCURACY:
+                outputs = model(input_ids)
+                loss = cross_entropy(outputs, labels)
+                accuracy = (outputs.argmax(dim=-1) == labels).float().mean()
+            else:
+                loss = model(input_ids, labels)
 
             # We scale loss with grad_acc_steps so the gradient is the same
             # regardless of grad_acc_steps
@@ -526,6 +539,8 @@ def train(args: TrainArgs):
 
                 to_sync = {}
                 to_sync["loss/out"] = loss.item()
+                if TRACK_ACCURACY:
+                    to_sync["accuracy/out"] = accuracy.item()
                 metrics.update(dist_mean_dict(to_sync))
 
                 if get_is_master():
@@ -538,6 +553,7 @@ def train(args: TrainArgs):
                     f"step: {train_state.step}"
                     f"  acc: {train_state.acc_step}"
                     f"  loss: {round(loss.item(),4):>7}"
+                    f"  accuracy: {accuracy.item():>7}" if TRACK_ACCURACY else ""
                     f"  grad: {grad_norm:.2e}"
                     f"  flops: {FLOPS:.2e}"
                     f"  wps: {wps:.2e}"
@@ -548,7 +564,6 @@ def train(args: TrainArgs):
                     f"  pow: {gpu_mem_stats.power_draw/1000} W"
                 )
 
-            saved = False
             if every_n_steps(
                 train_state, args.checkpoint.dump.every, acc_step=0
             ) or every_n_steps(train_state, args.checkpoint.eval.every, acc_step=0):
@@ -563,41 +578,51 @@ def train(args: TrainArgs):
             if args.eval is not None and every_n_steps(
                 train_state, args.checkpoint.eval.every, acc_step=0
             ):
-                from apps.main.eval import (
-                    launch_eval,
+                skip_launch = False
+                try:
+                    from apps.main.eval import (
                     EVAL_FOLDER_NAME,
                     EvalArgs,
+                    launch_eval,
                 )
+                except Exception as e:
+                    skip_launch = True
+                    logger.warning(f"Error occurred while importing eval args: {e}.Skipping eval launch.")
+                if not skip_launch:
+                    try:
+                        eval_args = dataclass_from_dict(EvalArgs, args.eval)
+                    except Exception as e:
+                        logger.warning(f"Error occurred while creating eval args: {e}. Trying relaxed dataclass creation.")
+                        eval_args = dataclass_from_dict_relaxed(EvalArgs, args.eval)
 
-                eval_args = dataclass_from_dict(EvalArgs, args.eval)
-
-                eval_args.global_step = train_state.step
-                eval_args.ckpt_dir = str(checkpoint.existing_saves[-1])
-                eval_args.dump_dir = str(
-                    os.path.join(
-                        args.dump_dir,
-                        "evals",
-                        EVAL_FOLDER_NAME.format(train_state.step),
-                    )
-                )
-                eval_args.metric_log_dir = args.dump_dir
-                if args.async_eval_gpus is None:
-                    launch_eval(eval_args)
-                elif get_is_master():
-                    if wandb.run is not None and args.logging.wandb is not None:
-                        eval_args.wandb = deepcopy(args.logging.wandb)
-                    assert args.async_eval_gpus > 0
-                    logger.info(f"Launching evals on {args.async_eval_gpus} gpus")
-                    with clean_env():
-                        launch_job(
-                            StoolArgs(
-                                asdict(eval_args),
-                                script="apps.main.eval",
-                                copy_code=False,
-                                nodes=args.async_eval_gpus // 8,
-                                qos="lowest",
-                            )
+                    eval_args.global_step = train_state.step
+                    eval_args.ckpt_dir = str(checkpoint.existing_saves[-1])
+                    eval_args.dump_dir = str(
+                        os.path.join(
+                            args.dump_dir,
+                            "evals",
+                            EVAL_FOLDER_NAME.format(train_state.step),
                         )
+                    )
+                    eval_args.metric_log_dir = args.dump_dir
+                    if args.async_eval_gpus is None:
+                        launch_eval(eval_args)
+                    elif get_is_master():
+                        if wandb.run is not None and args.logging.wandb is not None:
+                            eval_args.wandb = deepcopy(args.logging.wandb)
+                        assert args.async_eval_gpus > 0
+                        logger.info(f"Launching evals on {args.async_eval_gpus} gpus")
+                        # launch_eval(eval_args)
+                        with clean_env():
+                            launch_job(
+                                StoolArgs(
+                                    asdict(eval_args),
+                                    script="apps.main.eval",
+                                    copy_code=False,
+                                    nodes=args.async_eval_gpus // 8,
+                                    qos="lowest",
+                                )
+                            )
 
             if preemption_flag["flag"]:
                 if not saved:

@@ -1,0 +1,8 @@
+checkpoint:
+  path: /fsx/craffel/toksuite/lingua_logs/bigscience-bloom/checkpoints
+data:
+  tokenizer:
+    name: huggingface
+    path: bigscience/bloom
+dump_dir: /fsx/craffel/toksuite/lingua_logs/bigscience-bloom/
+name: toksuite_bigscience-bloom
